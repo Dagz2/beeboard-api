@@ -8,6 +8,8 @@ import java.util.Objects;
  */
 public record HashedPassword(String value) {
 
+    // -------------------- Creation -------------------- 
+
     /**
      * Canonical constructor enforcing non-null and non-blank hash.
      *
@@ -16,11 +18,13 @@ public record HashedPassword(String value) {
      * @throws IllegalArgumentException if value is blank
      */
     public HashedPassword {
-        Objects.requireNonNull(value, "Hashed password cannot be null");
+        Objects.requireNonNull(value, "Hashed password cannot be null.");
         if (value.isBlank()) {
-            throw new IllegalArgumentException("Hashed password cannot be blank");
+            throw new IllegalArgumentException("Hashed password cannot be blank.");
         }
     }
+
+    // -------------------- Overrides -------------------- 
 
     /**
      * Returns a placeholder to avoid revealing the actual hash.

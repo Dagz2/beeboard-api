@@ -8,6 +8,8 @@ import java.util.Objects;
  */
 public record FullName(String firstName, String lastName) {
 
+    // -------------------- Creation -------------------- 
+
     /**
      * Canonical constructor with validation.
      *
@@ -17,20 +19,22 @@ public record FullName(String firstName, String lastName) {
      * @throws IllegalArgumentException if firstName or lastName is blank
      */
     public FullName {
-        Objects.requireNonNull(firstName, "First name cannot be null");
-        Objects.requireNonNull(lastName, "Last name cannot be null");
+        Objects.requireNonNull(firstName, "First name cannot be null.");
+        Objects.requireNonNull(lastName, "Last name cannot be null.");
         String f = firstName.trim();
         String l = lastName.trim();
         if (f.isEmpty()) {
-            throw new IllegalArgumentException("First name cannot be empty");
+            throw new IllegalArgumentException("First name cannot be empty.");
         }
         if (l.isEmpty()) {
-            throw new IllegalArgumentException("Last name cannot be empty");
+            throw new IllegalArgumentException("Last name cannot be empty.");
         }
         // assign trimmed values
         firstName = f;
         lastName = l;
     }
+
+    // -------------------- Overrides -------------------- 
 
     /**
      * Returns the full name in "FirstName LastName" format.

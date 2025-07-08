@@ -11,6 +11,8 @@ public record EmailAddress(String value) {
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
         "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
     );
+    
+    // -------------------- Creation -------------------- 
 
     /**
      * Canonical constructor with validation.
@@ -33,6 +35,8 @@ public record EmailAddress(String value) {
         // assign trimmed value
         value = trimmed;
     }
+
+    // -------------------- Overrides -------------------- 
 
     @Override
     public String toString() {

@@ -7,10 +7,13 @@ import java.util.Objects;
  * Value Object carrying audit information for an entity:
  * - createdAt: timestamp when the entity was created
  * - updatedAt: timestamp when the entity was last modified
+ * (Not a record because we need to modify it)
  */
 public final class AuditInfo {
     private final Instant createdAt;
     private Instant updatedAt;
+
+    // -------------------- Creation -------------------- 
 
     /**
      * Private constructor. Use {@link #of(Instant)} to create a new instance.
@@ -19,8 +22,8 @@ public final class AuditInfo {
      * @param updatedAt initial update timestamp
      */
     private AuditInfo(Instant createdAt, Instant updatedAt) {
-        this.createdAt = Objects.requireNonNull(createdAt, "createdAt cannot be null");
-        this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt cannot be null");
+        this.createdAt = Objects.requireNonNull(createdAt, "createdAt cannot be null.");
+        this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt cannot be null.");
     }
 
     /**
@@ -33,6 +36,17 @@ public final class AuditInfo {
     public static AuditInfo of(Instant now) {
         return new AuditInfo(now, now);
     }
+
+    // -------------------- Domain methods -------------------- 
+
+    /**
+     * Touches the audit info, updating the updatedAt timestamp to the current time.
+     */
+    public void touch() {
+        this.updatedAt = Instant.now();
+    }
+
+    // -------------------- Getters -------------------- 
 
     /**
      * Retrieve the creation timestamp.
@@ -51,13 +65,8 @@ public final class AuditInfo {
     public Instant getUpdatedAt() {
         return updatedAt;
     }
-
-    /**
-     * Touches the audit info, updating the updatedAt timestamp to the current time.
-     */
-    public void touch() {
-        this.updatedAt = Instant.now();
-    }
+    
+    // -------------------- Overrides -------------------- 
 
     /**
      * Two AuditInfo instances are considered equal if their createdAt and updatedAt timestamps are equal.
