@@ -1,5 +1,5 @@
-package org.acme.domain.service;
-import org.acme.domain.model.HashedPassword;
+package org.access.domain.service;
+import org.access.domain.model.HashedPassword;
 
 /**
 * Domain interface for hashing and verifying passwords.

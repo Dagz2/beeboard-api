@@ -1,9 +1,15 @@
-package org.acme.domain.model;
+package org.access.domain.model;
 
 import java.util.Objects;
 
 /**
- * Entity representing a permission that can be assigned to a role.
+ * Aggregate Root representing a system permission.
+ * 
+ * A {@code Permission} defines an atomic capability that can be granted to roles.
+ * It has a stable business identity and can be created, modified, or deleted independently.
+ *
+ * This aggregate is used to manage the global permission catalog and can be referenced
+ * by other aggregates (such as {@code Role}) via {@link PermissionId}.
  */
 public class Permission {
 

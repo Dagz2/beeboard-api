@@ -1,4 +1,4 @@
-package org.acme.domain.model;
+package org.access.domain.model;
 
 import java.time.Instant;
 import java.util.Collections;
