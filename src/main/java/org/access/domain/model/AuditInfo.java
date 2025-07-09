@@ -21,7 +21,7 @@ public final class AuditInfo {
      * @param createdAt initial creation timestamp
      * @param updatedAt initial update timestamp
      */
-    private AuditInfo(Instant createdAt, Instant updatedAt) {
+    public AuditInfo(Instant createdAt, Instant updatedAt) {
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt cannot be null.");
         this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt cannot be null.");
     }

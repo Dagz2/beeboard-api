@@ -31,7 +31,7 @@ public class User {
      * @param auditInfo audit information value object
      * @param lastActivityDate timestamp of last user activity
      */
-    private User(UserId id, FullName fullName, EmailAddress email, RoleId roleId, ContractEndDate contractEndDate, Boolean isLocked, AuditInfo auditInfo, Instant lastActivityDate) {
+    public User(UserId id, FullName fullName, EmailAddress email, RoleId roleId, ContractEndDate contractEndDate, Boolean isLocked, AuditInfo auditInfo, Instant lastActivityDate) {
         this.id = Objects.requireNonNull(id, "Id cannot be null.");
         this.fullName = Objects.requireNonNull(fullName, "FullName cannot be null.");
         this.email = Objects.requireNonNull(email, "EmailAddress cannot be null.");

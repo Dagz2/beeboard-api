@@ -14,7 +14,7 @@ public class PermissionDto {
     /**
      * Unique identifier of the permission.
      */
-    public UUID permissionId;
+    public UUID id;
 
     /**
      * Functional code that identifies the permission (e.g. "VIEW_TASKS").
@@ -46,7 +46,7 @@ public class PermissionDto {
      * @param description  the detailed description of the permission
      */
     public PermissionDto(UUID permissionId, String code, String name, String description) {
-        this.permissionId = permissionId;
+        this.id = permissionId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -55,11 +55,11 @@ public class PermissionDto {
     // -------------------- Getters & Setters --------------------
 
     public UUID getPermissionId() {
-        return permissionId;
+        return id;
     }
 
     public void setPermissionId(UUID permissionId) {
-        this.permissionId = permissionId;
+        this.id = permissionId;
     }
 
     public String getCode() {

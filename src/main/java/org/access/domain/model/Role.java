@@ -122,6 +122,15 @@ public class Role {
     }
 
     /**
+     * Gets the audit info of this role.
+     *
+     * @return the role's audit info
+     */
+    public AuditInfo auditInfo() {
+        return auditInfo;
+    }
+
+    /**
      * Returns the set of permission identifiers associated with this role.
      *
      * @return an unmodifiable set of {@link PermissionId} assigned to the role

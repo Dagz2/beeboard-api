@@ -71,18 +71,17 @@ public class UserEntity extends PanacheEntityBase {
     private Instant lastActivityDate;
 
     /**
+     * Unique identifier for the role.
+     */
+    @Column(name = "role_id", nullable = false)
+    private UUID roleId;
+
+    /**
      * Audit information including creation and last modification timestamps.
      */
     @Embedded
     @NotNull
     private AuditInfoEmbeddable auditInfo;
-
-    /**
-     * Associated role for the user.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "role_id")
-    private RoleEntity role;
 
     // -------------------- Getters & Setters --------------------
 
@@ -150,11 +149,11 @@ public class UserEntity extends PanacheEntityBase {
         this.auditInfo = auditInfo;
     }
 
-    public RoleEntity getRole() {
-        return role;
+    public UUID getRoleId() {
+        return roleId;
     }
 
-    public void setRole(RoleEntity role) {
-        this.role = role;
+    public void setRoleId(UUID roleId) {
+        this.roleId = roleId;
     }
 }

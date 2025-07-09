@@ -27,7 +27,7 @@ public class PermissionEntity extends PanacheEntityBase {
     @Id
     @NotNull
     @Column(name = "permission_id", nullable = false)
-    private UUID userId;
+    private UUID permissionId;
 
     /**
      * Functional code of the permission (e.g. "CREATE_USER").
@@ -53,12 +53,12 @@ public class PermissionEntity extends PanacheEntityBase {
 
     // -------------------- Getters & Setters --------------------
 
-    public UUID getUserId() {
-        return userId;
+    public UUID getPermissionId() {
+        return permissionId;
     }
 
-    public void setUserId(UUID userId) {
-        this.userId = userId;
+    public void setPermissionId(UUID permissionId) {
+        this.permissionId = permissionId;
     }
 
     public String getCode() {

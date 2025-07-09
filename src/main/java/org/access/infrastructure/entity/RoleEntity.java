@@ -50,12 +50,12 @@ public class RoleEntity extends PanacheEntityBase {
     private AuditInfoEmbeddable auditInfo;
 
     /**
-     * Set of permissions assigned to this role.
-     * Mapped through a many-to-many join table.
+     * Actual relation to permission entities in the database.
+     * It is ManyToMany since a role can have many permissions, and one permission can be in many roles.
      */
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "role_permissions",
+        name = "role_permission",
         joinColumns = @JoinColumn(name = "role_id"),
         inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
