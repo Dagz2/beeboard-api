@@ -3,7 +3,6 @@ package org.access.infrastructure.mapper;
 import org.access.domain.model.*;
 import org.access.infrastructure.entity.RoleEntity;
 import org.access.infrastructure.entity.AuditInfoEmbeddable;
-import org.access.infrastructure.entity.PermissionEntity;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,7 +18,7 @@ public class RoleMapper {
     public static Role toDomain(RoleEntity entity) {
         Set<PermissionId> permissionIds = entity.getPermissions()
             .stream()
-            .map(p -> new PermissionId(p.getPermissionId()))
+            .map(p -> new PermissionId(p))
             .collect(Collectors.toSet());
 
         return new Role(
@@ -38,7 +37,7 @@ public class RoleMapper {
      * @param permissions the set of PermissionEntity corresponding to role.permissions()
      * @return the RoleEntity ready to persist
      */
-    public static RoleEntity toEntity(Role role, Set<PermissionEntity> permissions) {
+    public static RoleEntity toEntity(Role role) {
         RoleEntity entity = new RoleEntity();
         entity.setRoleId(role.id().id());
         entity.setCode(role.code().value());
@@ -47,7 +46,10 @@ public class RoleMapper {
         audit.setCreatedAt(role.auditInfo().getCreatedAt());
         audit.setUpdatedAt(role.auditInfo().getUpdatedAt());
         entity.setAuditInfo(audit);
-        entity.setPermissions(permissions);
+        entity.setPermissions(role.permissions()
+            .stream()
+            .map(permissionId -> permissionId.id())
+            .collect(Collectors.toSet()));
         return entity;
     }
 }

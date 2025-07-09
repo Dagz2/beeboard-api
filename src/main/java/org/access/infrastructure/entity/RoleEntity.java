@@ -50,16 +50,10 @@ public class RoleEntity extends PanacheEntityBase {
     private AuditInfoEmbeddable auditInfo;
 
     /**
-     * Actual relation to permission entities in the database.
-     * It is ManyToMany since a role can have many permissions, and one permission can be in many roles.
+     * Set of permissions associated with this role.
+     * Each permission is represented by its unique identifier.
      */
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "role_permission",
-        joinColumns = @JoinColumn(name = "role_id"),
-        inverseJoinColumns = @JoinColumn(name = "permission_id")
-    )
-    private Set<PermissionEntity> permissions = new HashSet<>();
+    private Set<UUID> permissions = new HashSet<>();
 
     // -------------------- Getters & Setters --------------------
 
@@ -96,11 +90,11 @@ public class RoleEntity extends PanacheEntityBase {
         this.auditInfo = auditInfo;
     }
 
-    public Set<PermissionEntity> getPermissions() {
+    public Set<UUID> getPermissions() {
         return permissions;
     }
 
-    public void setPermissions(Set<PermissionEntity> permissions) {
+    public void setPermissions(Set<UUID> permissions) {
         this.permissions = permissions;
     }
 }

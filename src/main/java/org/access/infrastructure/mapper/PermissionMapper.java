@@ -19,7 +19,7 @@ public class PermissionMapper {
             entity.getDescription()
         );
     }
-
+    
     /**
      * Converts a domain {@link Permission} to a JPA {@link PermissionEntity}.
      *
