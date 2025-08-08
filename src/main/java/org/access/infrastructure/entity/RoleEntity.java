@@ -51,9 +51,14 @@ public class RoleEntity extends PanacheEntityBase {
 
     /**
      * Set of permissions associated with this role.
-     * Each permission is represented by its unique identifier.
      */
-    private Set<UUID> permissions = new HashSet<>();
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "role_permission",
+        joinColumns = @JoinColumn(name = "role_id"),
+        inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+    private Set<PermissionEntity> permissions = new HashSet<>();
 
     // -------------------- Getters & Setters --------------------
 
@@ -90,11 +95,11 @@ public class RoleEntity extends PanacheEntityBase {
         this.auditInfo = auditInfo;
     }
 
-    public Set<UUID> getPermissions() {
+    public Set<PermissionEntity> getPermissions() {
         return permissions;
     }
 
-    public void setPermissions(Set<UUID> permissions) {
+    public void setPermissions(Set<PermissionEntity> permissions) {
         this.permissions = permissions;
     }
 }

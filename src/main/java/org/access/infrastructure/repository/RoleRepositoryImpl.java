@@ -3,17 +3,23 @@ package org.access.infrastructure.repository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
+import org.access.domain.model.PermissionId;
 import org.access.domain.model.Role;
 import org.access.domain.model.RoleCode;
 import org.access.domain.model.RoleId;
 import org.access.domain.repository.RoleRepository;
+import org.access.infrastructure.entity.PermissionEntity;
 import org.access.infrastructure.entity.RoleEntity;
 import org.access.infrastructure.mapper.RoleMapper;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -72,7 +78,14 @@ public class RoleRepositoryImpl implements RoleRepository, PanacheRepository<Rol
     @Override
     @Transactional
     public void save(Role role) {
-        RoleEntity entity = RoleMapper.toEntity(role);
+        Set<UUID> permissionIds = role.permissions().stream()
+            .map(PermissionId::id)
+            .collect(Collectors.toSet());
+        Set<PermissionEntity> permissionEntities = permissionIds.isEmpty()
+            ? Collections.emptySet()
+            : new HashSet<>(PermissionEntity.list("permissionId in ?1", permissionIds));
+
+        RoleEntity entity = RoleMapper.toEntity(role, permissionEntities);
         if (!existsById(role.id())) {
             persist(entity);
         } else {
