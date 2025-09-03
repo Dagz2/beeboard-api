@@ -16,7 +16,7 @@ public record ContractEndDate(LocalDate date) {
      * Validates that {@code date} is not null
      *
      * @param date the contract end date
-     * @throws NullPointerException     if {@code date} is null
+     * @throws NullPointerException if {@code date} is null
      */
     public ContractEndDate {
         Objects.requireNonNull(date, "Contract end date cannot be null.");
@@ -28,7 +28,7 @@ public record ContractEndDate(LocalDate date) {
      *
      * @param date the contract end date
      * @return a new instance of {@code ContractEndDate}
-     * @throws NullPointerException     if {@code date} is null
+     * @throws NullPointerException if {@code date} is null
      * @throws IllegalArgumentException if {@code date} is before the current date
      */
     public static ContractEndDate newContractEndDate(LocalDate date) {
@@ -51,7 +51,7 @@ public record ContractEndDate(LocalDate date) {
      * @throws NullPointerException if {@code other} is null
      */
     public boolean isAfter(ContractEndDate other) {
-        Objects.requireNonNull(other, "other must not be null.");
+        Objects.requireNonNull(other, "Other contract end date must not be null.");
         return this.date.isAfter(other.date());
     }
 
@@ -63,7 +63,7 @@ public record ContractEndDate(LocalDate date) {
      * @throws NullPointerException if {@code other} is null
      */
     public boolean isBefore(ContractEndDate other) {
-        Objects.requireNonNull(other, "other must not be null.");
+        Objects.requireNonNull(other, "Other contract end date must not be null.");
         return this.date.isBefore(other.date());
     }
 }

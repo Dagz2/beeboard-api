@@ -2,6 +2,7 @@ package org.access.infrastructure.mapper;
 
 import org.access.domain.model.*;
 import org.access.infrastructure.entity.UserEntity;
+import org.access.infrastructure.entity.RoleEntity;
 import org.access.infrastructure.entity.AuditInfoEmbeddable;
 
 import java.util.Objects;
@@ -29,7 +30,7 @@ public class UserMapper {
             new UserId(entity.getUserId()),
             new FullName(entity.getFirstName(), entity.getLastName()),
             new EmailAddress(entity.getEmail()),
-            new RoleId(entity.getRoleId()),
+            new RoleId(entity.getRole().getRoleId()),
             new ContractEndDate(entity.getContractEndDate()),
             entity.getIsLocked(),
             new AuditInfo(
@@ -58,7 +59,10 @@ public class UserMapper {
         entity.setContractEndDate(user.getContractEndDate().date());
         entity.setIsLocked(user.isLocked());
         entity.setLastActivityDate(user.getLastActivityDate());
-        entity.setRoleId(user.getRoleId().id());
+        // Create a lightweight RoleEntity reference with just the ID
+        RoleEntity roleEntity = new RoleEntity();
+        roleEntity.setRoleId(user.getRoleId().id());
+        entity.setRole(roleEntity);
 
         AuditInfoEmbeddable audit = new AuditInfoEmbeddable();
         audit.setCreatedAt(user.getAuditInfo().getCreatedAt());

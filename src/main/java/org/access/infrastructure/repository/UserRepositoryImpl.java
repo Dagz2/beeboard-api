@@ -76,6 +76,19 @@ public class UserRepositoryImpl implements UserRepository, PanacheRepository<Use
     }
 
     /**
+     * Retrieves all users assigned to a specific role from the database.
+     *
+     * @param roleId the domain role ID to search for
+     * @return list of domain users with the specified role
+     */
+    @Override
+    public List<User> findByRoleId(RoleId roleId) {
+        return find("role.roleId", roleId.id()).stream()
+            .map(UserMapper::toDomain)
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Persists a new user to the database.
      *
      * @param user the user domain object to save
@@ -107,5 +120,28 @@ public class UserRepositoryImpl implements UserRepository, PanacheRepository<Use
     @Override
     public boolean existsById(UserId id) {
         return count("userId", id.id()) > 0;
+    }
+
+    /**
+     * Checks whether any users are assigned to the given role ID.
+     * This is used to verify referential integrity before role deletion.
+     *
+     * @param roleId the role ID to check for user assignments
+     * @return true if there are users with this role, false otherwise
+     */
+    @Override
+    public boolean existsByRoleId(RoleId roleId) {
+        return count("role.roleId", roleId.id()) > 0;
+    }
+
+    /**
+     * Deletes a user by its ID.
+     *
+     * @param id the ID of the user to delete
+     */
+    @Override
+    @Transactional
+    public void deleteById(UserId id) {
+        delete("userId", id.id());
     }
 }

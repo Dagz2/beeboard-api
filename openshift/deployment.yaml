@@ -1,0 +1,103 @@
+# deployment.yaml - Configuration de déploiement pour mock-bank
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mock-bank-api                   # Nom du déploiement
+  labels:
+    app: mock-bank                      # Label principal de votre app
+    component: api
+    version: v1
+spec:
+  replicas: 2                          # 2 instances pour la haute disponibilité
+  selector:
+    matchLabels:
+      app: mock-bank
+      component: api
+  template:
+    metadata:
+      labels:
+        app: mock-bank
+        component: api
+        version: v1
+    spec:
+      containers:
+      - name: mock-bank-api
+        # 🚨 IMPORTANT : Remplacez par l'URL de votre image mock-bank
+        image: your-registry/mock-bank:latest
+        
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+          
+        env:
+        # Variables d'environnement spécifiques à mock-bank
+        - name: JAVA_OPTIONS
+          value: "-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+        - name: QUARKUS_PROFILE
+          value: "prod"
+        # Variables métier pour mock-bank
+        - name: BANK_NAME
+          value: "Mock Bank API"
+        - name: BANK_VERSION
+          value: "1.0.0"
+        - name: ENVIRONMENT
+          value: "production"
+        # 💡 Ajoutez vos variables spécifiques :
+        # - name: DATABASE_URL
+        #   value: "jdbc:postgresql://postgresql:5432/mockbank"
+        # - name: EXTERNAL_BANK_API_URL
+        #   value: "https://api.external-bank.com"
+        
+        resources:
+          limits:
+            cpu: 1000m              # 1 CPU pour une API bancaire (plus de charge)
+            memory: 768Mi           # 768 MB pour mock-bank
+          requests:
+            cpu: 500m               # 0.5 CPU minimum
+            memory: 384Mi           # 384 MB minimum
+            
+        # Health checks essentiels pour une API bancaire
+        livenessProbe:
+          httpGet:
+            path: /q/health/live
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 45    # Plus de temps pour démarrer (API complexe)
+          timeoutSeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+          
+        readinessProbe:
+          httpGet:
+            path: /q/health/ready
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+          
+        imagePullPolicy: Always
+        
+        # Configuration externalisée
+        volumeMounts:
+        - name: config-volume
+          mountPath: /deployments/config/application.properties
+          subPath: application.properties
+        # Si vous avez des certificats pour l'API bancaire
+        # - name: certs-volume
+        #   mountPath: /deployments/certs
+          
+      volumes:
+      - name: config-volume
+        configMap:
+          name: mock-bank-config
+      # - name: certs-volume
+      #   secret:
+      #     secretName: mock-bank-certs
+          
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

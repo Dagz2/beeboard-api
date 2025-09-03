@@ -14,9 +14,9 @@ import java.util.Objects;
 public class Permission {
 
     private final PermissionId id;
-    private final PermissionCode code;
-    private final PermissionName name;
-    private final String description;
+    private PermissionCode code;
+    private PermissionName name;
+    private String description;
 
     // -------------------- Creation --------------------
 
@@ -44,6 +44,35 @@ public class Permission {
      */
     public static Permission create(PermissionCode code, PermissionName name, String description) {
         return new Permission(PermissionId.newId(), code, name, description);
+    }
+
+    // -------------------- Domain methods --------------------
+
+    /**
+     * Updates the permission's code.
+     *
+     * @param newCode the new permission code (must not be null)
+     */
+    public void updateCode(PermissionCode newCode) {
+        this.code = Objects.requireNonNull(newCode, "New permission code cannot be null.");
+    }
+
+    /**
+     * Updates the permission's name.
+     *
+     * @param newName the new permission name (must not be null)
+     */
+    public void updateName(PermissionName newName) {
+        this.name = Objects.requireNonNull(newName, "New permission name cannot be null.");
+    }
+
+    /**
+     * Updates the permission's description.
+     *
+     * @param newDescription the new permission description (must not be null)
+     */
+    public void updateDescription(String newDescription) {
+        this.description = Objects.requireNonNull(newDescription, "New permission description cannot be null.");
     }
 
     // -------------------- Getters --------------------

@@ -3,7 +3,9 @@ package org.access.infrastructure.mapper;
 import org.access.domain.model.*;
 import org.access.infrastructure.entity.RoleEntity;
 import org.access.infrastructure.entity.AuditInfoEmbeddable;
+import org.access.infrastructure.entity.PermissionEntity;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -16,20 +18,20 @@ public class RoleMapper {
      * @return the domain Role
      */
     public static Role toDomain(RoleEntity entity) {
-        Set<PermissionId> permissionIds = entity.getPermissions()
-            .stream()
-            .map(p -> new PermissionId(p))
+
+        Set<PermissionId> permissions = entity.getPermissions().stream()
+            .map(permissionEntity -> new PermissionId(permissionEntity.getPermissionId()))
             .collect(Collectors.toSet());
+
 
         return new Role(
             new RoleId(entity.getRoleId()),
             new RoleCode(entity.getCode()),
             new RoleName(entity.getName()),
-            permissionIds,
+            permissions,
             new AuditInfo(entity.getAuditInfo().getCreatedAt(), entity.getAuditInfo().getUpdatedAt())
         );
     }
-
     /**
      * Maps a domain Role to a RoleEntity.
      *
@@ -39,17 +41,31 @@ public class RoleMapper {
      */
     public static RoleEntity toEntity(Role role) {
         RoleEntity entity = new RoleEntity();
+
+        // Set the role's unique identifier
         entity.setRoleId(role.id().id());
+
+        // Set the business and display identifiers
         entity.setCode(role.code().value());
         entity.setName(role.name().value());
+
+        // Set audit information (creation and update timestamps)
         AuditInfoEmbeddable audit = new AuditInfoEmbeddable();
         audit.setCreatedAt(role.auditInfo().getCreatedAt());
         audit.setUpdatedAt(role.auditInfo().getUpdatedAt());
         entity.setAuditInfo(audit);
-        entity.setPermissions(role.permissions()
-            .stream()
-            .map(permissionId -> permissionId.id())
-            .collect(Collectors.toSet()));
+
+        // Map permission identifiers to lightweight PermissionEntity references
+        Set<PermissionEntity> permissions = role.permissions().stream()
+            .map(permissionId -> {
+                PermissionEntity permission = new PermissionEntity();
+                permission.setPermissionId(permissionId.id());
+                return permission;
+            })
+            .collect(Collectors.toSet());
+        entity.setPermissions(permissions);
+
         return entity;
     }
+
 }

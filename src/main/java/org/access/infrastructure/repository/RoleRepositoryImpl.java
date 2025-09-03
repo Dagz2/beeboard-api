@@ -8,7 +8,9 @@ import org.access.domain.model.RoleCode;
 import org.access.domain.model.RoleId;
 import org.access.domain.repository.RoleRepository;
 import org.access.infrastructure.entity.RoleEntity;
+import org.access.infrastructure.entity.UserEntity;
 import org.access.infrastructure.mapper.RoleMapper;
+import org.access.infrastructure.mapper.UserMapper;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 
@@ -81,6 +83,19 @@ public class RoleRepositoryImpl implements RoleRepository, PanacheRepository<Rol
     }
 
     /**
+     * Updates an existing user in the database.
+     *
+     * @param user the user domain object to update
+     */
+    @Override
+    @Transactional
+    public void update(Role role) {
+        RoleEntity entity = RoleMapper.toEntity(role);
+        getEntityManager().merge(entity);
+    }
+
+
+    /**
      * Deletes a role from the database by its ID.
      *
      * @param id the domain role ID to delete
@@ -101,4 +116,5 @@ public class RoleRepositoryImpl implements RoleRepository, PanacheRepository<Rol
     public boolean existsById(RoleId id) {
         return count("roleId", id.id()) > 0;
     }
+
 }

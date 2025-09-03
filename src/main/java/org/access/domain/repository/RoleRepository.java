@@ -3,6 +3,7 @@ package org.access.domain.repository;
 import org.access.domain.model.Role;
 import org.access.domain.model.RoleCode;
 import org.access.domain.model.RoleId;
+import org.access.domain.model.User;
 
 import java.util.List;
 import java.util.Optional;
@@ -48,6 +49,14 @@ public interface RoleRepository {
     void save(Role role);
 
     /**
+     * Update the given user aggregate.
+     * 
+     *
+     * @param user the user to update
+     */
+    void update(Role role);
+
+    /**
      * Deletes a role by its ID.
      *
      * @param id the ID of the role to delete
@@ -61,4 +70,5 @@ public interface RoleRepository {
      * @return {@code true} if the role exists, {@code false} otherwise
      */
     boolean existsById(RoleId id);
+
 }

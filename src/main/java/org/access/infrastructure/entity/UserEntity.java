@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import io.smallrye.common.constraint.NotNull;
+import jakarta.validation.constraints.NotNull;
 import jakarta.persistence.*;
 
 /**
@@ -17,7 +17,7 @@ import jakarta.persistence.*;
  * This entity is part of the infrastructure layer and mirrors the domain aggregate `User`.
  */
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 public class UserEntity extends PanacheEntityBase {
 
     /**
@@ -71,10 +71,11 @@ public class UserEntity extends PanacheEntityBase {
     private Instant lastActivityDate;
 
     /**
-     * Unique identifier for the role.
+     * Role assigned to this user.
      */
-    @Column(name = "role_id", nullable = false)
-    private UUID roleId;
+    @ManyToOne
+    @JoinColumn(name = "role_id", nullable = false)
+    private RoleEntity role;
 
     /**
      * Audit information including creation and last modification timestamps.
@@ -149,11 +150,11 @@ public class UserEntity extends PanacheEntityBase {
         this.auditInfo = auditInfo;
     }
 
-    public UUID getRoleId() {
-        return roleId;
+    public RoleEntity getRole() {
+        return role;
     }
 
-    public void setRoleId(UUID roleId) {
-        this.roleId = roleId;
+    public void setRole(RoleEntity role) {
+        this.role = role;
     }
 }

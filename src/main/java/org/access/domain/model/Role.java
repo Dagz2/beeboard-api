@@ -13,8 +13,8 @@ import java.util.Set;
 public class Role {
 
     private final RoleId id;
-    private final RoleCode code;
-    private final RoleName name;
+    private RoleCode code;
+    private RoleName name;
     private final Set<PermissionId> permissions;
     private final AuditInfo auditInfo;
 
@@ -90,6 +90,26 @@ public class Role {
      */
     public boolean hasPermission(PermissionId permissionId) {
         return permissions.contains(permissionId);
+    }
+
+    /**
+     * Updates the role's code.
+     *
+     * @param newCode the new role code (must not be null)
+     */
+    public void updateCode(RoleCode newCode) {
+        this.code = Objects.requireNonNull(newCode, "New role code cannot be null.");
+        auditInfo.touch();
+    }
+
+    /**
+     * Updates the role's name.
+     *
+     * @param newName the new role name (must not be null)
+     */
+    public void updateName(RoleName newName) {
+        this.name = Objects.requireNonNull(newName, "New role name cannot be null.");
+        auditInfo.touch();
     }
 
     // -------------------- Getters --------------------

@@ -2,6 +2,7 @@ package org.access.domain.repository;
 
 import org.access.domain.model.EmailAddress;
 import org.access.domain.model.FullName;
+import org.access.domain.model.RoleId;
 import org.access.domain.model.User;
 import org.access.domain.model.UserId;
 
@@ -49,6 +50,14 @@ public interface UserRepository {
     List<User> findAllUsers();
 
     /**
+     * Retrieves all users assigned to a specific role.
+     *
+     * @param roleId the role ID to search for
+     * @return a list of {@link User} entities with the specified role
+     */
+    List<User> findByRoleId(RoleId roleId);
+
+    /**
      * Saves the given user aggregate.
      * 
      *
@@ -71,5 +80,21 @@ public interface UserRepository {
      * @return true if the user exists, false otherwise
      */
     boolean existsById(UserId id);
+
+    /**
+     * Checks whether any users are assigned to the given role ID.
+     * This is typically used to verify referential integrity before role deletion.
+     *
+     * @param roleId the role ID to check for user assignments
+     * @return {@code true} if there are users with this role, {@code false} otherwise
+     */
+    boolean existsByRoleId(RoleId roleId);
+
+    /**
+     * Deletes a user by its ID.
+     *
+     * @param id the ID of the user to delete
+     */
+    void deleteById(UserId id);
 
 }

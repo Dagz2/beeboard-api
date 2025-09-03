@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import io.smallrye.common.constraint.NotNull;
+import jakarta.validation.constraints.NotNull;
 import jakarta.persistence.*;
 
 /**
@@ -25,7 +25,7 @@ public class RoleEntity extends PanacheEntityBase {
      */
     @Id
     @NotNull
-    @Column(name = "role_id", nullable = false)
+    @Column(name = "role_id", nullable = false, updatable = false)
     private UUID roleId;
 
     /**
@@ -51,10 +51,16 @@ public class RoleEntity extends PanacheEntityBase {
 
     /**
      * Set of permissions associated with this role.
-     * Each permission is represented by its unique identifier.
      */
-    private Set<UUID> permissions = new HashSet<>();
+    @ManyToMany
+    @JoinTable(
+        name = "role_permission",
+        joinColumns = @JoinColumn(name = "role_id"),
+        inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+    private Set<PermissionEntity> permissions = new HashSet<>();
 
+    
     // -------------------- Getters & Setters --------------------
 
     public UUID getRoleId() {
@@ -90,11 +96,11 @@ public class RoleEntity extends PanacheEntityBase {
         this.auditInfo = auditInfo;
     }
 
-    public Set<UUID> getPermissions() {
+    public Set<PermissionEntity> getPermissions() {
         return permissions;
     }
 
-    public void setPermissions(Set<UUID> permissions) {
+    public void setPermissions(Set<PermissionEntity> permissions) {
         this.permissions = permissions;
     }
 }
