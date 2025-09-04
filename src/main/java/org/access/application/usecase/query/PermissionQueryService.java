@@ -10,6 +10,7 @@ import org.access.domain.repository.PermissionRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -50,8 +51,8 @@ public class PermissionQueryService {
      * @param id the permission ID
      * @return an {@link Optional} containing the {@link PermissionDto} if found
      */
-    public Optional<PermissionDto> findById(PermissionId id) {
-        return permissionRepository.findById(id)
+    public Optional<PermissionDto> findById(UUID id) {
+        return permissionRepository.findById(new PermissionId(id))
             .map(PermissionMapper::toDto);
     }
 

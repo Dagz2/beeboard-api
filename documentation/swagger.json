@@ -1,0 +1,656 @@
+{
+  "openapi" : "3.1.0",
+  "tags" : [ {
+    "name" : "Access Management",
+    "description" : "Endpoints for managing users, roles, and permissions"
+  } ],
+  "components" : {
+    "schemas" : {
+      "CreatePermissionCommand" : {
+        "type" : "object",
+        "required" : [ "code", "name", "description" ],
+        "properties" : {
+          "code" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          },
+          "name" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          },
+          "description" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }
+      },
+      "CreateRoleCommand" : {
+        "type" : "object",
+        "required" : [ "code", "name" ],
+        "properties" : {
+          "code" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          },
+          "name" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }
+      },
+      "CreateUserCommand" : {
+        "type" : "object",
+        "required" : [ "firstName", "lastName", "email", "roleId", "contractEndDate" ],
+        "properties" : {
+          "firstName" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          },
+          "lastName" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          },
+          "email" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          },
+          "roleId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "contractEndDate" : {
+            "$ref" : "#/components/schemas/LocalDate"
+          }
+        }
+      },
+      "DeletePermissionCommand" : {
+        "type" : "object",
+        "required" : [ "permissionId" ],
+        "properties" : {
+          "permissionId" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }
+      },
+      "DeleteRoleCommand" : {
+        "type" : "object",
+        "required" : [ "roleId" ],
+        "properties" : {
+          "roleId" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }
+      },
+      "DeleteUserCommand" : {
+        "type" : "object",
+        "required" : [ "userId" ],
+        "properties" : {
+          "userId" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }
+      },
+      "LocalDate" : {
+        "type" : "string",
+        "format" : "date",
+        "examples" : [ "2022-03-10" ]
+      },
+      "LockUserCommand" : {
+        "type" : "object",
+        "required" : [ "userId" ],
+        "properties" : {
+          "userId" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }
+      },
+      "UUID" : {
+        "type" : "string",
+        "format" : "uuid",
+        "pattern" : "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+      },
+      "UnlockUserCommand" : {
+        "type" : "object",
+        "required" : [ "userId" ],
+        "properties" : {
+          "userId" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }
+      },
+      "UpdatePermissionCommand" : {
+        "type" : "object",
+        "required" : [ "permissionId", "code", "name", "description" ],
+        "properties" : {
+          "permissionId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "code" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          },
+          "name" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          },
+          "description" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }
+      },
+      "UpdateRoleCommand" : {
+        "type" : "object",
+        "required" : [ "roleId", "code", "name" ],
+        "properties" : {
+          "roleId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "code" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          },
+          "name" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "SecurityScheme" : {
+        "type" : "http",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT",
+        "description" : "Authentication"
+      }
+    }
+  },
+  "paths" : {
+    "/api/v1/access/permissions" : {
+      "get" : {
+        "summary" : "Get all permissions",
+        "description" : "Returns a complete list of all defined permissions",
+        "tags" : [ "Access Management" ],
+        "responses" : {
+          "200" : {
+            "description" : "Permissions retrieved successfully"
+          }
+        }
+      },
+      "post" : {
+        "summary" : "Create a new permission",
+        "description" : "Creates a new permission that can be granted to roles",
+        "tags" : [ "Access Management" ],
+        "requestBody" : {
+          "description" : "Permission creation data",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Create Permission Example" : {
+                  "value" : {
+                    "code" : "VIEW_REPORTS",
+                    "name" : "View Reports",
+                    "description" : "Allows viewing of system reports"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/CreatePermissionCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Permission created successfully"
+          },
+          "400" : {
+            "description" : "Invalid input data"
+          }
+        }
+      }
+    },
+    "/api/v1/access/permissions/{permissionId}" : {
+      "put" : {
+        "summary" : "Update permission",
+        "description" : "Updates an existing permission's information",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "permissionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "Permission update data",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Update Permission Example" : {
+                  "value" : {
+                    "permissionId" : "550e8400-e29b-41d4-a716-446655440000",
+                    "code" : "VIEW_DETAILED_REPORTS",
+                    "name" : "View Detailed Reports",
+                    "description" : "Allows viewing of detailed system reports and analytics"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatePermissionCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Permission updated successfully"
+          },
+          "404" : {
+            "description" : "Permission not found"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        }
+      },
+      "get" : {
+        "summary" : "Get permission by ID",
+        "description" : "Retrieves a specific permission by its unique identifier",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "permissionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Permission found successfully"
+          },
+          "404" : {
+            "description" : "Permission not found"
+          }
+        }
+      },
+      "delete" : {
+        "summary" : "Delete permission",
+        "description" : "Permanently deletes a permission from the system",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "permissionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DeletePermissionCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Permission deleted successfully"
+          },
+          "404" : {
+            "description" : "Permission not found"
+          }
+        }
+      }
+    },
+    "/api/v1/access/roles" : {
+      "get" : {
+        "summary" : "Get all roles",
+        "description" : "Returns a complete list of all defined roles",
+        "tags" : [ "Access Management" ],
+        "responses" : {
+          "200" : {
+            "description" : "Roles retrieved successfully"
+          }
+        }
+      },
+      "post" : {
+        "summary" : "Create a new role",
+        "description" : "Creates a new role with a unique code and descriptive name",
+        "tags" : [ "Access Management" ],
+        "requestBody" : {
+          "description" : "Role creation data",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Create Role Example" : {
+                  "value" : {
+                    "code" : "MANAGER",
+                    "name" : "Project Manager"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateRoleCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Role created successfully"
+          },
+          "400" : {
+            "description" : "Invalid input data"
+          }
+        }
+      }
+    },
+    "/api/v1/access/roles/{roleId}" : {
+      "put" : {
+        "summary" : "Update role",
+        "description" : "Updates an existing role's information",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "roleId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "Role update data",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Update Role Example" : {
+                  "value" : {
+                    "roleId" : "550e8400-e29b-41d4-a716-446655440000",
+                    "code" : "SENIOR_MANAGER",
+                    "name" : "Senior Project Manager"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateRoleCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Role updated successfully"
+          },
+          "404" : {
+            "description" : "Role not found"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        }
+      },
+      "get" : {
+        "summary" : "Get role by ID",
+        "description" : "Retrieves a specific role by its unique identifier",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "roleId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Role found successfully"
+          },
+          "404" : {
+            "description" : "Role not found"
+          }
+        }
+      },
+      "delete" : {
+        "summary" : "Delete role",
+        "description" : "Permanently deletes a role from the system",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "roleId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DeleteRoleCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Role deleted successfully"
+          },
+          "404" : {
+            "description" : "Role not found"
+          }
+        }
+      }
+    },
+    "/api/v1/access/users" : {
+      "get" : {
+        "summary" : "Get all users",
+        "description" : "Returns a complete list of all registered users",
+        "tags" : [ "Access Management" ],
+        "responses" : {
+          "200" : {
+            "description" : "Users retrieved successfully"
+          }
+        }
+      },
+      "post" : {
+        "summary" : "Create a new user",
+        "description" : "Creates a new user with personal information, role assignment, and contract details",
+        "tags" : [ "Access Management" ],
+        "requestBody" : {
+          "description" : "User creation data",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Create User Example" : {
+                  "value" : {
+                    "firstName" : "John",
+                    "lastName" : "Doe",
+                    "email" : "john.doe@example.com",
+                    "roleId" : "550e8400-e29b-41d4-a716-446655440000",
+                    "contractEndDate" : "2025-12-31"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateUserCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "User created successfully"
+          },
+          "400" : {
+            "description" : "Invalid input data"
+          }
+        }
+      }
+    },
+    "/api/v1/access/users/role/{roleId}" : {
+      "get" : {
+        "summary" : "Get users by role",
+        "description" : "Returns all users assigned to a specific role",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "roleId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Users retrieved successfully"
+          }
+        }
+      }
+    },
+    "/api/v1/access/users/{userId}" : {
+      "get" : {
+        "summary" : "Get user by ID",
+        "description" : "Retrieves a specific user by their unique identifier",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "User found successfully"
+          },
+          "404" : {
+            "description" : "User not found"
+          }
+        }
+      },
+      "delete" : {
+        "summary" : "Delete user",
+        "description" : "Permanently deletes a user from the system. User must be locked before deletion.",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DeleteUserCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "User deleted successfully"
+          },
+          "404" : {
+            "description" : "User not found"
+          },
+          "400" : {
+            "description" : "User must be locked before deletion"
+          }
+        }
+      }
+    },
+    "/api/v1/access/users/{userId}/lock" : {
+      "put" : {
+        "summary" : "Lock user account",
+        "description" : "Locks a user account to prevent system access",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LockUserCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "User locked successfully"
+          },
+          "404" : {
+            "description" : "User not found"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/v1/access/users/{userId}/unlock" : {
+      "put" : {
+        "summary" : "Unlock user account",
+        "description" : "Unlocks a previously locked user account to restore system access",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UnlockUserCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "User unlocked successfully"
+          },
+          "404" : {
+            "description" : "User not found"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        }
+      }
+    }
+  },
+  "info" : {
+    "title" : "code-with-quarkus API",
+    "version" : "1.0.0-SNAPSHOT"
+  }
+}

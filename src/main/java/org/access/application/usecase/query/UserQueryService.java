@@ -52,8 +52,8 @@ public class UserQueryService {
      * @param userId the ID of the user to retrieve
      * @return an optional {@link UserDto} if found
      */
-    public Optional<UserDto> findById(UserId userId) {
-        return userRepository.findById(userId)
+    public Optional<UserDto> findById(UUID userId) {
+        return userRepository.findById(new UserId(userId))
             .map(UserMapper::toDto);
     }
 

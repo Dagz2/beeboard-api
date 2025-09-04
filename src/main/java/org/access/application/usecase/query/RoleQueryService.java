@@ -11,6 +11,7 @@ import org.access.domain.repository.RoleRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -51,8 +52,8 @@ public class RoleQueryService {
      * @param roleId the ID of the role
      * @return an optional {@link RoleDto} if found
      */
-    public Optional<RoleDto> findById(RoleId roleId) {
-        return roleRepository.findById(roleId)
+    public Optional<RoleDto> findById(UUID roleId) {
+        return roleRepository.findById(new RoleId(roleId))
             .map(RoleMapper::toDto);
     }
 

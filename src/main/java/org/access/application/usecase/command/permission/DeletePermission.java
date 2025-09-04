@@ -1,8 +1,11 @@
 package org.access.application.usecase.command.permission;
 
 import jakarta.enterprise.context.ApplicationScoped;
+
+import org.access.application.dto.command.permission.DeletePermissionCommand;
 import org.access.domain.model.PermissionId;
 import org.access.domain.repository.PermissionRepository;
+import org.hibernate.sql.Delete;
 
 /**
  * Use case for deleting an existing permission.
@@ -29,9 +32,9 @@ public class DeletePermission {
      *
      * @param permissionId the unique identifier of the permission to delete
      */
-    public void execute(PermissionId permissionId) {
-        if (permissionRepository.existsById(permissionId)) {
-            permissionRepository.deleteById(permissionId);
+    public void execute(DeletePermissionCommand command) {
+        if (permissionRepository.existsById(new PermissionId(command.permissionId()))) {
+            permissionRepository.deleteById(new PermissionId(command.permissionId()));
         }
         // Silently ignore if not found — optional behavior
     }
