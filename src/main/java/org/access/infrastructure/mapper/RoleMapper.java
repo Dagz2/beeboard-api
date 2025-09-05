@@ -5,7 +5,6 @@ import org.access.infrastructure.entity.RoleEntity;
 import org.access.infrastructure.entity.AuditInfoEmbeddable;
 import org.access.infrastructure.entity.PermissionEntity;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 

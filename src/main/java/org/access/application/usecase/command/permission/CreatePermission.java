@@ -1,6 +1,8 @@
 package org.access.application.usecase.command.permission;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.command.permission.CreatePermissionCommand;
 import org.access.domain.model.Permission;
 import org.access.domain.model.PermissionCode;
@@ -32,6 +34,7 @@ public class CreatePermission {
      *
      * @param command the input containing all required permission fields
      */
+    @Transactional
     public void execute(CreatePermissionCommand command) {
         Permission permission = Permission.create(
             new PermissionCode(command.code()),

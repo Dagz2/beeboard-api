@@ -1,7 +1,6 @@
 package org.access.infrastructure.repository;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.transaction.Transactional;
 
 import org.access.domain.model.*;
 import org.access.domain.repository.UserRepository;
@@ -94,7 +93,6 @@ public class UserRepositoryImpl implements UserRepository, PanacheRepository<Use
      * @param user the user domain object to save
      */
     @Override
-    @Transactional
     public void save(User user) {
         persist(UserMapper.toEntity(user));
     }
@@ -105,7 +103,6 @@ public class UserRepositoryImpl implements UserRepository, PanacheRepository<Use
      * @param user the user domain object to update
      */
     @Override
-    @Transactional
     public void update(User user) {
         UserEntity entity = UserMapper.toEntity(user);
         getEntityManager().merge(entity);
@@ -140,7 +137,6 @@ public class UserRepositoryImpl implements UserRepository, PanacheRepository<Use
      * @param id the ID of the user to delete
      */
     @Override
-    @Transactional
     public void deleteById(UserId id) {
         delete("userId", id.id());
     }

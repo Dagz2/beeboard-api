@@ -1,6 +1,8 @@
 package org.access.application.usecase.query;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.query.UserDto;
 import org.access.application.mapper.UserMapper;
 import org.access.domain.model.EmailAddress;
@@ -18,7 +20,7 @@ import java.util.stream.Collectors;
 /**
  * Application service for querying {@link User} data.
  *
- * <p>This service provides read-only operations on users, converting domain objects
+ * This service provides read-only operations on users, converting domain objects
  * into {@link UserDto} representations suitable for the application layer.
  */
 @ApplicationScoped
@@ -40,6 +42,7 @@ public class UserQueryService {
      *
      * @return list of {@link UserDto} representations
      */
+    @Transactional
     public List<UserDto> findAllUsers() {
         return userRepository.findAllUsers().stream()
             .map(UserMapper::toDto)
@@ -52,6 +55,7 @@ public class UserQueryService {
      * @param userId the ID of the user to retrieve
      * @return an optional {@link UserDto} if found
      */
+    @Transactional
     public Optional<UserDto> findById(UUID userId) {
         return userRepository.findById(new UserId(userId))
             .map(UserMapper::toDto);
@@ -63,6 +67,7 @@ public class UserQueryService {
      * @param email the email address to search for
      * @return an optional {@link UserDto} if found
      */
+    @Transactional
     public Optional<UserDto> findByEmail(EmailAddress email) {
         return userRepository.findByMail(email)
             .map(UserMapper::toDto);
@@ -74,6 +79,7 @@ public class UserQueryService {
      * @param fullName the full name to search for
      * @return an optional {@link UserDto} if found
      */
+    @Transactional
     public Optional<UserDto> findByFullName(FullName fullName) {
         return userRepository.findByName(fullName)
             .map(UserMapper::toDto);
@@ -86,6 +92,7 @@ public class UserQueryService {
      * @return {@code true} if expired, {@code false} if still active
      * @throws IllegalArgumentException if the user doesn't exist
      */
+    @Transactional
     public boolean isContractExpired(UserId userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId.id()));
@@ -98,6 +105,7 @@ public class UserQueryService {
      * @param roleId the role ID to search for
      * @return list of {@link UserDto} representations of users with the specified role
      */
+    @Transactional
     public List<UserDto> findUsersByRole(RoleId roleId) {
         return userRepository.findByRoleId(roleId).stream()
             .map(UserMapper::toDto)
@@ -110,6 +118,7 @@ public class UserQueryService {
      * @param roleId the role ID as UUID to search for
      * @return list of {@link UserDto} representations of users with the specified role
      */
+    @Transactional
     public List<UserDto> findUsersByRole(UUID roleId) {
         return findUsersByRole(new RoleId(roleId));
     }

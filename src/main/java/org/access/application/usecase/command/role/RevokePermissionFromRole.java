@@ -1,6 +1,8 @@
 package org.access.application.usecase.command.role;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.domain.model.PermissionId;
 import org.access.domain.model.Role;
 import org.access.domain.model.RoleId;
@@ -33,6 +35,7 @@ public class RevokePermissionFromRole {
      * @param permissionId the ID of the permission to revoke
      * @throws IllegalArgumentException if the role does not exist
      */
+    @Transactional
     public void execute(RoleId roleId, PermissionId permissionId) {
         Role role = roleRepository.findById(roleId)
             .orElseThrow(() -> new IllegalArgumentException("Role not found with ID: " + roleId.id()));

@@ -1,6 +1,8 @@
 package org.access.application.usecase.query;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.query.PermissionDto;
 import org.access.application.mapper.PermissionMapper;
 import org.access.domain.model.Permission;
@@ -16,7 +18,7 @@ import java.util.stream.Collectors;
 /**
  * Application service for querying {@link Permission} data.
  *
- * <p>This service exposes read-only operations for retrieving permissions.
+ * This service exposes read-only operations for retrieving permissions.
  * It transforms domain objects into {@link PermissionDto} to be consumed
  * by the application layer or external clients.</p>
  */
@@ -39,6 +41,7 @@ public class PermissionQueryService {
      *
      * @return a list of {@link PermissionDto} representing all permissions
      */
+    @Transactional
     public List<PermissionDto> findAllPermissions() {
         return permissionRepository.findAllPermissions().stream()
             .map(PermissionMapper::toDto)
@@ -51,6 +54,7 @@ public class PermissionQueryService {
      * @param id the permission ID
      * @return an {@link Optional} containing the {@link PermissionDto} if found
      */
+    @Transactional
     public Optional<PermissionDto> findById(UUID id) {
         return permissionRepository.findById(new PermissionId(id))
             .map(PermissionMapper::toDto);
@@ -62,6 +66,7 @@ public class PermissionQueryService {
      * @param code the permission code
      * @return an {@link Optional} containing the {@link PermissionDto} if found
      */
+    @Transactional
     public Optional<PermissionDto> findByCode(PermissionCode code) {
         return permissionRepository.findByCode(code)
             .map(PermissionMapper::toDto);

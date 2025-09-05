@@ -1,6 +1,8 @@
 package org.access.application.usecase.command.user;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.command.user.ChangeMailCommand;
 import org.access.domain.model.EmailAddress;
 import org.access.domain.model.User;
@@ -33,6 +35,7 @@ public class ChangeMail {
      * @param command contains the user ID and the new email address
      * @throws IllegalArgumentException if the user is not found
      */
+    @Transactional
     public void execute(ChangeMailCommand command) {
         User user = userRepository.findById(new UserId(command.userId()))
             .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + command.userId()));

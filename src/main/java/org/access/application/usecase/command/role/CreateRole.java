@@ -1,6 +1,8 @@
 package org.access.application.usecase.command.role;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.command.role.CreateRoleCommand;
 import org.access.domain.model.Role;
 import org.access.domain.model.RoleCode;
@@ -32,6 +34,7 @@ public class CreateRole {
      *
      * @param command the command containing the new role data
      */
+    @Transactional
     public void execute(CreateRoleCommand command) {
         Role role = Role.create(
             new RoleCode(command.code()),

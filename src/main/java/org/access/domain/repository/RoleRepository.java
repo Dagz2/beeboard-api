@@ -3,7 +3,6 @@ package org.access.domain.repository;
 import org.access.domain.model.Role;
 import org.access.domain.model.RoleCode;
 import org.access.domain.model.RoleId;
-import org.access.domain.model.User;
 
 import java.util.List;
 import java.util.Optional;

@@ -4,7 +4,7 @@ BEGIN;
 
 -- Table: permission
 CREATE TABLE permission (
-    permission_id UUID PRIMARY KEY NOT NULL,
+    permission_id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     code VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
     description VARCHAR(100) NOT NULL
@@ -12,7 +12,7 @@ CREATE TABLE permission (
 
 -- Table: role
 CREATE TABLE role (
-    role_id UUID PRIMARY KEY NOT NULL,
+    role_id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     code VARCHAR(50) NOT NULL,
     name VARCHAR(50) NOT NULL,
     created_at TIMESTAMP NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE role_permission (
 
 -- Table: "user"
 CREATE TABLE "users" (
-    user_id UUID PRIMARY KEY NOT NULL,
+    user_id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL,
@@ -42,5 +42,7 @@ CREATE TABLE "users" (
     updated_at TIMESTAMP NOT NULL,
     CONSTRAINT fk_user_role FOREIGN KEY (role_id) REFERENCES role(role_id)
 );
+
+COMMIT;
 
 END;

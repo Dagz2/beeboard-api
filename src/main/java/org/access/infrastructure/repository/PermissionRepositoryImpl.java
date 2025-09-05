@@ -1,7 +1,6 @@
 package org.access.infrastructure.repository;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.transaction.Transactional;
 
 import org.access.domain.model.Permission;
 import org.access.domain.model.PermissionCode;
@@ -69,7 +68,6 @@ public class PermissionRepositoryImpl implements PermissionRepository, PanacheRe
      * @param permission the domain permission to save or update
      */
     @Override
-    @Transactional
     public void save(Permission permission) {
         PermissionEntity entity = PermissionMapper.toEntity(permission);
         if (!existsById(permission.id())) {
@@ -85,7 +83,6 @@ public class PermissionRepositoryImpl implements PermissionRepository, PanacheRe
      * @param id the domain permission ID to delete
      */
     @Override
-    @Transactional
     public void deleteById(PermissionId id) {
         delete("permissionId", id.id());
     }

@@ -1,6 +1,8 @@
 package org.access.application.usecase.command.user;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.command.user.DeleteUserCommand;
 import org.access.domain.model.User;
 import org.access.domain.model.UserId;
@@ -34,6 +36,7 @@ public class DeleteUser {
      * @throws IllegalArgumentException if the user does not exist
      * @throws IllegalStateException if the user is not locked (must be locked before deletion)
      */
+    @Transactional
     public void execute(DeleteUserCommand command) {
         UserId userId = new UserId(command.userId());
         

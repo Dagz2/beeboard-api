@@ -1,6 +1,8 @@
 package org.access.application.usecase.command.permission;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.command.permission.UpdatePermissionCommand;
 import org.access.domain.model.Permission;
 import org.access.domain.model.PermissionCode;
@@ -34,6 +36,7 @@ public class UpdatePermission {
      * @param command the input containing the permission ID and updated fields
      * @throws IllegalArgumentException if the permission does not exist
      */
+    @Transactional
     public void execute(UpdatePermissionCommand command) {
         PermissionId permissionId = new PermissionId(command.permissionId());
         

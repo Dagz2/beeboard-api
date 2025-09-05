@@ -1,6 +1,8 @@
 package org.access.application.usecase.command.user;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.command.user.LockUserCommand;
 import org.access.domain.model.User;
 import org.access.domain.model.UserId;
@@ -34,6 +36,7 @@ public class LockUser {
      * @throws IllegalArgumentException if the user does not exist
      * @throws IllegalStateException if the user is already locked
      */
+    @Transactional
     public void execute(LockUserCommand command) {
         User user = userRepository.findById(new UserId(command.userId()))
             .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + command.userId()));

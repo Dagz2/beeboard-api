@@ -1,6 +1,8 @@
 package org.access.application.usecase.command.user;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.command.user.ExtendContractCommand;
 import org.access.domain.model.ContractEndDate;
 import org.access.domain.model.User;
@@ -33,6 +35,7 @@ public class ExtendContract {
      * @param command the command containing the user ID and new contract end date
      * @throws IllegalArgumentException if the user does not exist or the new date is invalid
      */
+    @Transactional
     public void execute(ExtendContractCommand command) {
         User user = userRepository.findById(new UserId(command.userId()))
             .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + command.userId()));

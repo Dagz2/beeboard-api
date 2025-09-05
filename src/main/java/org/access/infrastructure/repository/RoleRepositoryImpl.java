@@ -1,16 +1,13 @@
 package org.access.infrastructure.repository;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.transaction.Transactional;
 
 import org.access.domain.model.Role;
 import org.access.domain.model.RoleCode;
 import org.access.domain.model.RoleId;
 import org.access.domain.repository.RoleRepository;
 import org.access.infrastructure.entity.RoleEntity;
-import org.access.infrastructure.entity.UserEntity;
 import org.access.infrastructure.mapper.RoleMapper;
-import org.access.infrastructure.mapper.UserMapper;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 
@@ -72,7 +69,6 @@ public class RoleRepositoryImpl implements RoleRepository, PanacheRepository<Rol
      * @param role the domain role to persist
      */
     @Override
-    @Transactional
     public void save(Role role) {
         RoleEntity entity = RoleMapper.toEntity(role);
         if (!existsById(role.id())) {
@@ -88,7 +84,6 @@ public class RoleRepositoryImpl implements RoleRepository, PanacheRepository<Rol
      * @param user the user domain object to update
      */
     @Override
-    @Transactional
     public void update(Role role) {
         RoleEntity entity = RoleMapper.toEntity(role);
         getEntityManager().merge(entity);
@@ -101,7 +96,6 @@ public class RoleRepositoryImpl implements RoleRepository, PanacheRepository<Rol
      * @param id the domain role ID to delete
      */
     @Override
-    @Transactional
     public void deleteById(RoleId id) {
         delete("roleId", id.id());
     }

@@ -1,6 +1,7 @@
 package org.access.application.usecase.command.user;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
 import org.access.application.dto.command.user.ChangeFullNameCommand;
 import org.access.domain.model.FullName;
@@ -35,6 +36,7 @@ public class ChangeFullName {
      * @param newFullName the new full name to assign
      * @throws IllegalArgumentException if the user does not exist
      */
+    @Transactional
     public void execute(ChangeFullNameCommand command) {
         User user = userRepository.findById(new UserId(command.userId()))
             .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + command.userId()));

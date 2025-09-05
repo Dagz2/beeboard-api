@@ -1,6 +1,8 @@
 package org.access.application.usecase.command.role;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.command.role.DeleteRoleCommand;
 import org.access.domain.model.RoleId;
 import org.access.domain.repository.RoleRepository;
@@ -37,6 +39,7 @@ public class DeleteRole {
      * @throws IllegalArgumentException if the role does not exist
      * @throws IllegalStateException if users are still assigned to this role
      */
+    @Transactional
     public void execute(DeleteRoleCommand command) {
         RoleId roleId = new RoleId(command.roleId());
         

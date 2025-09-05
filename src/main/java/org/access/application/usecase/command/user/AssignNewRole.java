@@ -1,6 +1,8 @@
 package org.access.application.usecase.command.user;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.command.user.AssignNewRoleCommand;
 import org.access.domain.model.RoleId;
 import org.access.domain.model.User;
@@ -34,6 +36,7 @@ public class AssignNewRole {
      * @param command contains the user ID and the new role ID
      * @throws IllegalArgumentException if the user is not found
      */
+    @Transactional
     public void execute(AssignNewRoleCommand command) {
         User user = userRepository.findById(new UserId(command.userId()))
             .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + command.userId()));

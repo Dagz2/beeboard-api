@@ -55,7 +55,7 @@ public class User {
         Instant now = Instant.now();
         AuditInfo auditInfo = AuditInfo.of(now);
         Boolean isLocked = false; // User is active by default
-        return new User(UserId.newId(), fullName, email, roleId, contractEndDate, isLocked, auditInfo, null);
+        return new User(UserId.newId(), fullName, email, roleId, contractEndDate, isLocked, auditInfo, now);
     }
 
     // -------------------- Domain methods -------------------- 

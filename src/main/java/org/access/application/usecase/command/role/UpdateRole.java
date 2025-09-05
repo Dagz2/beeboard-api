@@ -1,6 +1,8 @@
 package org.access.application.usecase.command.role;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.command.role.UpdateRoleCommand;
 import org.access.domain.model.Role;
 import org.access.domain.model.RoleCode;
@@ -34,6 +36,7 @@ public class UpdateRole {
      * @param command the command containing the role ID and new values
      * @throws IllegalArgumentException if the role does not exist
      */
+    @Transactional
     public void execute(UpdateRoleCommand command) {
         Role role = roleRepository.findById(new RoleId(command.roleId()))
             .orElseThrow(() -> new IllegalArgumentException("Role not found with ID: " + command.roleId()));

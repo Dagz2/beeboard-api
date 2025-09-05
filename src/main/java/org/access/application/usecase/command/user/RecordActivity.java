@@ -1,6 +1,8 @@
 package org.access.application.usecase.command.user;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
 import org.access.application.dto.command.user.RecordActivityCommand;
 import org.access.domain.model.User;
 import org.access.domain.model.UserId;
@@ -32,6 +34,7 @@ public class RecordActivity {
      * @param command the command containing the user ID
      * @throws IllegalArgumentException if the user does not exist
      */
+    @Transactional
     public void execute(RecordActivityCommand command) {
         User user = userRepository.findById(new UserId(command.userId()))
             .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + command.userId()));
