@@ -49,10 +49,11 @@ public class CreateUser {
         // Construct value objects from command input
         FullName fullName = new FullName(command.firstName(), command.lastName());
         EmailAddress email = new EmailAddress(command.email());
+        Password password = Password.fromPlainText(command.password());
         ContractEndDate contractEndDate = new ContractEndDate(command.contractEndDate());
 
         // Create new user aggregate
-        User user = User.create(fullName, email, roleId, contractEndDate);
+        User user = User.create(fullName, email, password, roleId, contractEndDate);
 
         // Persist user
         userRepository.save(user);

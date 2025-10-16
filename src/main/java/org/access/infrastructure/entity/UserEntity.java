@@ -50,6 +50,13 @@ public class UserEntity extends PanacheEntityBase {
     private String email;
 
     /**
+     * Hashed password of the user.
+     */
+    @NotNull
+    @Column(name = "password_hash", length = 60, nullable = false)
+    private String passwordHash;
+
+    /**
      * Date at which the user's contract ends.
      */
     @NotNull
@@ -116,6 +123,14 @@ public class UserEntity extends PanacheEntityBase {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public LocalDate getContractEndDate() {

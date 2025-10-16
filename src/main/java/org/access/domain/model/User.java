@@ -12,6 +12,7 @@ public class User {
     private final UserId id;
     private FullName fullName;
     private EmailAddress email;
+    private Password password;
     private RoleId roleId;
     private ContractEndDate contractEndDate;
     private boolean isLocked;
@@ -26,15 +27,17 @@ public class User {
      * @param id unique identifier of the user
      * @param fullName full name value object
      * @param email email address value object
+     * @param password password value object
      * @param roleId role identifier value object
      * @param contractEndDate contract end date value object
      * @param auditInfo audit information value object
      * @param lastActivityDate timestamp of last user activity
      */
-    public User(UserId id, FullName fullName, EmailAddress email, RoleId roleId, ContractEndDate contractEndDate, Boolean isLocked, AuditInfo auditInfo, Instant lastActivityDate) {
+    public User(UserId id, FullName fullName, EmailAddress email, Password password, RoleId roleId, ContractEndDate contractEndDate, Boolean isLocked, AuditInfo auditInfo, Instant lastActivityDate) {
         this.id = Objects.requireNonNull(id, "Id cannot be null.");
         this.fullName = Objects.requireNonNull(fullName, "FullName cannot be null.");
         this.email = Objects.requireNonNull(email, "EmailAddress cannot be null.");
+        this.password = Objects.requireNonNull(password, "Password cannot be null.");
         this.roleId = Objects.requireNonNull(roleId, "RoleId cannot be null.");
         this.contractEndDate = Objects.requireNonNull(contractEndDate, "ContractEndDate cannot be null.");
         this.isLocked = Objects.requireNonNull(isLocked, "IsLocked cannot be null.");
@@ -47,15 +50,16 @@ public class User {
      *
      * @param fullName full name value object
      * @param email email address value object
+     * @param password password value object
      * @param roleId role identifier value object
      * @param contractEndDate contract end date value object
      * @return a new User instance
      */
-    public static User create(FullName fullName, EmailAddress email, RoleId roleId, ContractEndDate contractEndDate) {
+    public static User create(FullName fullName, EmailAddress email, Password password, RoleId roleId, ContractEndDate contractEndDate) {
         Instant now = Instant.now();
         AuditInfo auditInfo = AuditInfo.of(now);
         Boolean isLocked = false; // User is active by default
-        return new User(UserId.newId(), fullName, email, roleId, contractEndDate, isLocked, auditInfo, now);
+        return new User(UserId.newId(), fullName, email, password, roleId, contractEndDate, isLocked, auditInfo, now);
     }
 
     // -------------------- Domain methods -------------------- 
@@ -154,6 +158,26 @@ public class User {
     }
 
     /**
+     * Changes the user's password.
+     *
+     * @param newPassword the new password value object (must not be null)
+     */
+    public void changePassword(Password newPassword) {
+        this.password = Objects.requireNonNull(newPassword, "New password cannot be null.");
+        auditInfo.touch();
+    }
+
+    /**
+     * Verifies if the provided plain text password matches the user's password.
+     *
+     * @param plainPassword the plain text password to verify
+     * @return true if the password matches, false otherwise
+     */
+    public boolean verifyPassword(String plainPassword) {
+        return password.matches(plainPassword);
+    }
+
+    /**
      * Checks whether the user's contract has expired.
      *
      * @return true if the current time is after the contract end date; false otherwise
@@ -234,6 +258,15 @@ public class User {
      */
     public Instant getLastActivityDate() {
         return lastActivityDate;
+    }
+
+    /**
+     * Gets the user's password.
+     *
+     * @return the password value object
+     */
+    public Password getPassword() {
+        return password;
     }
 
     // -------------------- Overrides -------------------- 

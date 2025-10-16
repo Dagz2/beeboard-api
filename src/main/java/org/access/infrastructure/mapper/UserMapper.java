@@ -30,6 +30,7 @@ public class UserMapper {
             new UserId(entity.getUserId()),
             new FullName(entity.getFirstName(), entity.getLastName()),
             new EmailAddress(entity.getEmail()),
+            Password.fromHash(entity.getPasswordHash()),
             new RoleId(entity.getRole().getRoleId()),
             new ContractEndDate(entity.getContractEndDate()),
             entity.getIsLocked(),
@@ -56,6 +57,7 @@ public class UserMapper {
         entity.setFirstName(user.getFullName().firstName());
         entity.setLastName(user.getFullName().lastName());
         entity.setEmail(user.getEmail().value());
+        entity.setPasswordHash(user.getPassword().hash());
         entity.setContractEndDate(user.getContractEndDate().date());
         entity.setIsLocked(user.isLocked());
         entity.setLastActivityDate(user.getLastActivityDate());

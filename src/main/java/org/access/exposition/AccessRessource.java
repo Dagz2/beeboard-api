@@ -425,7 +425,6 @@ public class AccessRessource {
         }
     }
 
-    
     /**
      * Updates an existing role's information.
      * 
