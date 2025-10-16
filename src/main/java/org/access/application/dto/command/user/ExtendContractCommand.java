@@ -7,6 +7,6 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 
 public record ExtendContractCommand (
-    @NotNull UUID userId,
-    @NotNull @Future LocalDate newEndDate
+    @NotNull(message = "User ID is required") UUID userId,
+    @NotNull(message = "New end date is required") @Future(message = "End date should be in the future") LocalDate newEndDate
 ) {}

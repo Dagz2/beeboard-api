@@ -2,8 +2,8 @@ package org.access.application.dto.command.role;
 
 import java.util.UUID;
 
-import io.smallrye.common.constraint.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 public record DeletePermissionCommand (
-    @NotNull UUID roleId
+    @NotNull(message = "Role ID is required") UUID roleId
 ) {}

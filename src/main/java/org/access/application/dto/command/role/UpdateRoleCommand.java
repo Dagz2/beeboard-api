@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateRoleCommand(
-    @NotNull UUID roleId,
-    @NotBlank String code,
-    @NotBlank String name
+    @NotNull(message = "Role ID is required") UUID roleId,
+    @NotBlank(message = "Role code is required") String code,
+    @NotBlank(message = "Role name is required") String name
 ) {}

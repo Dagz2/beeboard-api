@@ -5,5 +5,5 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record DeletePermissionCommand (
-    @NotNull UUID permissionId
+    @NotNull(message = "Permission ID is required") UUID permissionId
 ) {}

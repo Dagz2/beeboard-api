@@ -5,5 +5,5 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record UnlockUserCommand (
-    @NotNull UUID userId
+    @NotNull(message = "User ID is required") UUID userId
 ) {}

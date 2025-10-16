@@ -6,6 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record ChangeMailCommand (
-    @NotNull UUID userId,
-    @NotBlank String email
+    @NotNull(message = "User ID is required") UUID userId,
+    @NotBlank(message = "Email is required") String email
 ) {}

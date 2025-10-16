@@ -5,5 +5,5 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record RecordActivityCommand (
-    @NotNull UUID userId
+    @NotNull(message = "User ID is required") UUID userId
 ) {}

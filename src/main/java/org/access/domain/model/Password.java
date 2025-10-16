@@ -25,17 +25,38 @@ public class Password {
      *
      * @param plainPassword the plain text password
      * @return a new Password instance with hashed password
-     * @throws IllegalArgumentException if password is null, empty, or too short
+     * @throws IllegalArgumentException if password doesn't meet security requirements
      */
     public static Password fromPlainText(String plainPassword) {
+        validatePasswordRequirements(plainPassword);
+        String hashed = BCrypt.hashpw(plainPassword, BCrypt.gensalt());
+        return new Password(hashed);
+    }
+
+    /**
+     * Validates that the password meets all security requirements.
+     *
+     * @param plainPassword the plain text password to validate
+     * @throws IllegalArgumentException if password doesn't meet requirements
+     */
+    private static void validatePasswordRequirements(String plainPassword) {
         if (plainPassword == null || plainPassword.trim().isEmpty()) {
             throw new IllegalArgumentException("Password cannot be null or empty.");
         }
-        if (plainPassword.length() < 8) {
-            throw new IllegalArgumentException("Password must be at least 8 characters long.");
+
+        if (plainPassword.length() < 32) {
+            throw new IllegalArgumentException("Password must be at least 32 characters long.");
         }
-        String hashed = BCrypt.hashpw(plainPassword, BCrypt.gensalt());
-        return new Password(hashed);
+
+        // Check for at least one digit
+        if (!plainPassword.matches(".*\\d.*")) {
+            throw new IllegalArgumentException("Password must contain at least one digit (0-9).");
+        }
+
+        // Check for at least one special character
+        if (!plainPassword.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*")) {
+            throw new IllegalArgumentException("Password must contain at least one special character (!@#$%^&*()_+-=[]{}; ':\"\\|,.<>/?).");
+        }
     }
 
     /**
