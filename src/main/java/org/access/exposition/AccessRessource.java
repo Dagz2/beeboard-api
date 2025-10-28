@@ -1,8 +1,14 @@
 package org.access.exposition;
 
+import org.access.application.dto.command.user.AssignNewRoleCommand;
+import org.access.application.dto.command.user.ChangeFullNameCommand;
+import org.access.application.dto.command.user.ChangeMailCommand;
 import org.access.application.dto.command.user.CreateUserCommand;
 import org.access.application.dto.command.user.DeleteUserCommand;
+import org.access.application.dto.command.user.ExtendContractCommand;
 import org.access.application.dto.command.user.LockUserCommand;
+import org.access.application.dto.command.user.RecordActivityCommand;
+import org.access.application.dto.command.user.TerminateContractCommand;
 import org.access.application.dto.command.user.UnlockUserCommand;
 import org.access.application.dto.command.role.CreateRoleCommand;
 import org.access.application.dto.command.role.DeleteRoleCommand;
@@ -14,7 +20,10 @@ import org.access.application.usecase.command.user.*;
 import org.access.application.usecase.command.role.*;
 import org.access.application.usecase.command.permission.*;
 import org.access.application.usecase.query.*;
+import org.access.domain.model.PermissionId;
+import org.access.domain.model.RoleId;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -30,6 +39,7 @@ import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 
 /**
  * REST resource for access management operations.
@@ -42,6 +52,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Access Management", description = "Endpoints for managing users, roles, and permissions")
+@SecurityRequirement(name = "JWT")
+@RolesAllowed({"DIRECTOR", "HR_MANAGER", "PROJECT_MANAGER", "TECH_LEAD", "SENIOR_DEVELOPER", "DEVELOPER", "INTERN", "EXTERNAL"})
 @ApplicationScoped
 public class AccessRessource {
 
@@ -111,6 +123,7 @@ public class AccessRessource {
      */
     @POST
     @Path("/users")
+    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
     @Operation(
         summary = "Create a new user",
         description = "Creates a new user with personal information, role assignment, and contract details"
@@ -166,6 +179,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/users/{userId}/lock")
+    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
     @Operation(
         summary = "Lock user account",
         description = "Locks a user account to prevent system access"
@@ -202,6 +216,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/users/{userId}/unlock")
+    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
     @Operation(
         summary = "Unlock user account",
         description = "Unlocks a previously locked user account to restore system access"
@@ -227,6 +242,228 @@ public class AccessRessource {
     }
 
     /**
+     * Assigns a new role to a user.
+     *
+     * Updates the user's role assignment, which affects their permissions
+     * and access levels throughout the system.
+     *
+     * @param userId the unique identifier of the user
+     * @param cmd the command containing the new role ID
+     * @return HTTP 200 OK when the role is successfully assigned
+     */
+    @PUT
+    @Path("/users/{userId}/role")
+    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @Operation(
+        summary = "Assign new role to user",
+        description = "Updates the user's role assignment"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Role assigned successfully"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "User not found"
+    )
+    public Response assignNewRole(@PathParam("userId") UUID userId, @Valid AssignNewRoleCommand cmd) {
+        Log.info("Request received: PUT /users/" + userId + "/role - Assigning new role to user");
+        try {
+            assignNewRole.execute(cmd);
+            Log.info("Request successful: PUT /users/" + userId + "/role - Role assigned successfully");
+            return Response.ok().build();
+        } catch (Exception e) {
+            Log.error("Request failed: PUT /users/" + userId + "/role - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Changes a user's full name.
+     *
+     * Updates both the first name and last name of the user.
+     *
+     * @param userId the unique identifier of the user
+     * @param cmd the command containing the new first and last names
+     * @return HTTP 200 OK when the name is successfully changed
+     */
+    @PUT
+    @Path("/users/{userId}/name")
+    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @Operation(
+        summary = "Change user's full name",
+        description = "Updates the user's first name and last name"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Name changed successfully"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "User not found"
+    )
+    public Response changeFullName(@PathParam("userId") UUID userId, @Valid ChangeFullNameCommand cmd) {
+        Log.info("Request received: PUT /users/" + userId + "/name - Changing user full name");
+        try {
+            changeFullName.execute(cmd);
+            Log.info("Request successful: PUT /users/" + userId + "/name - Full name changed successfully");
+            return Response.ok().build();
+        } catch (Exception e) {
+            Log.error("Request failed: PUT /users/" + userId + "/name - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Changes a user's email address.
+     *
+     * Updates the user's email address used for authentication and communication.
+     *
+     * @param userId the unique identifier of the user
+     * @param cmd the command containing the new email address
+     * @return HTTP 200 OK when the email is successfully changed
+     */
+    @PUT
+    @Path("/users/{userId}/email")
+    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @Operation(
+        summary = "Change user's email",
+        description = "Updates the user's email address"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Email changed successfully"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "User not found"
+    )
+    public Response changeMail(@PathParam("userId") UUID userId, @Valid ChangeMailCommand cmd) {
+        Log.info("Request received: PUT /users/" + userId + "/email - Changing user email");
+        try {
+            changeMail.execute(cmd);
+            Log.info("Request successful: PUT /users/" + userId + "/email - Email changed successfully");
+            return Response.ok().build();
+        } catch (Exception e) {
+            Log.error("Request failed: PUT /users/" + userId + "/email - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Extends a user's contract end date.
+     *
+     * Updates the contract end date to a future date, extending the user's
+     * access to the system.
+     *
+     * @param userId the unique identifier of the user
+     * @param cmd the command containing the new contract end date
+     * @return HTTP 200 OK when the contract is successfully extended
+     */
+    @PUT
+    @Path("/users/{userId}/contract")
+    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @Operation(
+        summary = "Extend user's contract",
+        description = "Updates the user's contract end date to a future date"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Contract extended successfully"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "User not found"
+    )
+    @APIResponse(
+        responseCode = "400",
+        description = "New end date must be after the current one"
+    )
+    public Response extendContract(@PathParam("userId") UUID userId, @Valid ExtendContractCommand cmd) {
+        Log.info("Request received: PUT /users/" + userId + "/contract - Extending user contract");
+        try {
+            extendContract.execute(cmd);
+            Log.info("Request successful: PUT /users/" + userId + "/contract - Contract extended successfully");
+            return Response.ok().build();
+        } catch (Exception e) {
+            Log.error("Request failed: PUT /users/" + userId + "/contract - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Terminates a user's contract immediately.
+     *
+     * Sets the contract end date to today and locks the user's account.
+     * Used for resignations or dismissals.
+     *
+     * @param userId the unique identifier of the user
+     * @param cmd the command containing the user ID
+     * @return HTTP 200 OK when the contract is successfully terminated
+     */
+    @PUT
+    @Path("/users/{userId}/contract/terminate")
+    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @Operation(
+        summary = "Terminate user's contract",
+        description = "Immediately terminates the user's contract and locks their account"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Contract terminated successfully"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "User not found"
+    )
+    public Response terminateContract(@PathParam("userId") UUID userId, @Valid TerminateContractCommand cmd) {
+        Log.info("Request received: PUT /users/" + userId + "/contract/terminate - Terminating user contract");
+        try {
+            terminateContract.execute(cmd);
+            Log.info("Request successful: PUT /users/" + userId + "/contract/terminate - Contract terminated successfully");
+            return Response.ok().build();
+        } catch (Exception e) {
+            Log.error("Request failed: PUT /users/" + userId + "/contract/terminate - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Records user activity.
+     *
+     * Updates the user's last activity timestamp to track system usage.
+     *
+     * @param userId the unique identifier of the user
+     * @param cmd the command containing the user ID
+     * @return HTTP 200 OK when the activity is successfully recorded
+     */
+    @PUT
+    @Path("/users/{userId}/activity")
+    @Operation(
+        summary = "Record user activity",
+        description = "Updates the user's last activity timestamp"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Activity recorded successfully"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "User not found"
+    )
+    public Response recordActivity(@PathParam("userId") UUID userId, @Valid RecordActivityCommand cmd) {
+        Log.info("Request received: PUT /users/" + userId + "/activity - Recording user activity");
+        try {
+            recordActivity.execute(cmd);
+            Log.info("Request successful: PUT /users/" + userId + "/activity - Activity recorded successfully");
+            return Response.ok().build();
+        } catch (Exception e) {
+            Log.error("Request failed: PUT /users/" + userId + "/activity - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
      * Permanently deletes a user from the system.
      * 
      * Performs a hard delete operation that completely removes the user
@@ -240,6 +477,7 @@ public class AccessRessource {
      */
     @DELETE
     @Path("/users/{userId}")
+    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
     @Operation(
         summary = "Delete user",
         description = "Permanently deletes a user from the system. User must be locked before deletion."
@@ -385,6 +623,7 @@ public class AccessRessource {
      */
     @POST
     @Path("/roles")
+    @RolesAllowed("DIRECTOR")
     @Operation(
         summary = "Create a new role",
         description = "Creates a new role with a unique code and descriptive name"
@@ -437,6 +676,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/roles/{roleId}")
+    @RolesAllowed("DIRECTOR")
     @Operation(
         summary = "Update role",
         description = "Updates an existing role's information"
@@ -491,6 +731,7 @@ public class AccessRessource {
      */
     @DELETE
     @Path("/roles/{roleId}")
+    @RolesAllowed("DIRECTOR")
     @Operation(
         summary = "Delete role",
         description = "Permanently deletes a role from the system"
@@ -511,6 +752,80 @@ public class AccessRessource {
             return Response.noContent().build();
         } catch (Exception e) {
             Log.error("Request failed: DELETE /roles/" + roleId + " - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Grants a permission to a role.
+     *
+     * Associates a permission with a role, allowing users with that role
+     * to perform the associated action.
+     *
+     * @param roleId the unique identifier of the role
+     * @param permissionId the unique identifier of the permission to grant
+     * @return HTTP 200 OK when the permission is successfully granted
+     */
+    @PUT
+    @Path("/roles/{roleId}/permissions/{permissionId}")
+    @RolesAllowed("DIRECTOR")
+    @Operation(
+        summary = "Grant permission to role",
+        description = "Associates a permission with a role, granting access to the specified action"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Permission granted successfully"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "Role or permission not found"
+    )
+    public Response grantPermission(@PathParam("roleId") UUID roleId, @PathParam("permissionId") UUID permissionId) {
+        Log.info("Request received: PUT /roles/" + roleId + "/permissions/" + permissionId + " - Granting permission to role");
+        try {
+            grantPermission.execute(new RoleId(roleId), new PermissionId(permissionId));
+            Log.info("Request successful: PUT /roles/" + roleId + "/permissions/" + permissionId + " - Permission granted successfully");
+            return Response.ok().build();
+        } catch (Exception e) {
+            Log.error("Request failed: PUT /roles/" + roleId + "/permissions/" + permissionId + " - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Revokes a permission from a role.
+     *
+     * Removes the association between a permission and a role,
+     * preventing users with that role from performing the associated action.
+     *
+     * @param roleId the unique identifier of the role
+     * @param permissionId the unique identifier of the permission to revoke
+     * @return HTTP 200 OK when the permission is successfully revoked
+     */
+    @DELETE
+    @Path("/roles/{roleId}/permissions/{permissionId}")
+    @RolesAllowed("DIRECTOR")
+    @Operation(
+        summary = "Revoke permission from role",
+        description = "Removes a permission from a role, revoking access to the specified action"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Permission revoked successfully"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "Role or permission not found"
+    )
+    public Response revokePermissionFromRole(@PathParam("roleId") UUID roleId, @PathParam("permissionId") UUID permissionId) {
+        Log.info("Request received: DELETE /roles/" + roleId + "/permissions/" + permissionId + " - Revoking permission from role");
+        try {
+            revokePermissionFromRole.execute(new RoleId(roleId), new PermissionId(permissionId));
+            Log.info("Request successful: DELETE /roles/" + roleId + "/permissions/" + permissionId + " - Permission revoked successfully");
+            return Response.ok().build();
+        } catch (Exception e) {
+            Log.error("Request failed: DELETE /roles/" + roleId + "/permissions/" + permissionId + " - " + e.getMessage());
             throw e;
         }
     }
@@ -601,6 +916,7 @@ public class AccessRessource {
      */
     @POST
     @Path("/permissions")
+    @RolesAllowed("DIRECTOR")
     @Operation(
         summary = "Create a new permission",
         description = "Creates a new permission that can be granted to roles"
@@ -638,6 +954,99 @@ public class AccessRessource {
             return Response.status(Response.Status.CREATED).build();
         } catch (Exception e) {
             Log.error("Request failed: POST /permissions - Failed to create permission: " + cmd.code() + " - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    
+    /**
+     * Updates an existing permission's information.
+     * 
+     * Modifies the permission's properties such as code, name, or description
+     * while preserving its unique identifier and existing role associations.
+     * 
+     * @param permissionId the unique identifier of the permission to update
+     * @param cmd validated permission update data
+     * @return HTTP 200 OK when the permission is successfully updated
+     */
+    @PUT
+    @Path("/permissions/{permissionId}")
+    @RolesAllowed("DIRECTOR")
+    @Operation(
+        summary = "Update permission",
+        description = "Updates an existing permission's information"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Permission updated successfully"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "Permission not found"
+    )
+    @RequestBody(
+        description = "Permission update data",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Update Permission Example",
+                value = """
+                {
+                    "permissionId": "550e8400-e29b-41d4-a716-446655440000",
+                    "code": "VIEW_DETAILED_REPORTS",
+                    "name": "View Detailed Reports",
+                    "description": "Allows viewing of detailed system reports and analytics"
+                }
+                """
+            )
+        )
+    )
+    public Response updatePermission(@PathParam("permissionId") UUID permissionId, @Valid UpdatePermissionCommand cmd) {
+        Log.info("Request received: PUT /permissions/" + permissionId + " - Updating permission to code: " + cmd.code());
+        try {
+            updatePermission.execute(cmd);
+            Log.info("Request successful: PUT /permissions/" + permissionId + " - Permission updated successfully to code: " + cmd.code());
+            return Response.ok().build();
+        } catch (Exception e) {
+            Log.error("Request failed: PUT /permissions/" + permissionId + " - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Deletes a permission from the system.
+     * 
+     * Permanently removes a permission and all its associations with roles.
+     * This operation should be used carefully as it affects access control
+     * for all roles that currently have this permission.
+     * 
+     * @param permissionId the unique identifier of the permission to delete
+     * @return HTTP 204 No Content when the permission is successfully deleted
+     */
+    @DELETE
+    @Path("/permissions/{permissionId}")
+    @RolesAllowed("DIRECTOR")
+    @Operation(
+        summary = "Delete permission",
+        description = "Permanently deletes a permission from the system"
+    )
+    @APIResponse(
+        responseCode = "204",
+        description = "Permission deleted successfully"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "Permission not found"
+    )
+    public Response deletePermission(@PathParam("permissionId") UUID permissionId, @Valid DeletePermissionCommand cmd) {
+        Log.info("Request received: DELETE /permissions/" + permissionId + " - Deleting permission");
+        try {
+            deletePermission.execute(cmd);
+            Log.info("Request successful: DELETE /permissions/" + permissionId + " - Permission deleted successfully");
+            return Response.noContent().build();
+        } catch (Exception e) {
+            Log.error("Request failed: DELETE /permissions/" + permissionId + " - " + e.getMessage());
             throw e;
         }
     }
@@ -709,96 +1118,6 @@ public class AccessRessource {
             return Response.ok(permissions).build();
         } catch (Exception e) {
             Log.error("Request failed: GET /permissions - " + e.getMessage());
-            throw e;
-        }
-    }
-
-    /**
-     * Updates an existing permission's information.
-     * 
-     * Modifies the permission's properties such as code, name, or description
-     * while preserving its unique identifier and existing role associations.
-     * 
-     * @param permissionId the unique identifier of the permission to update
-     * @param cmd validated permission update data
-     * @return HTTP 200 OK when the permission is successfully updated
-     */
-    @PUT
-    @Path("/permissions/{permissionId}")
-    @Operation(
-        summary = "Update permission",
-        description = "Updates an existing permission's information"
-    )
-    @APIResponse(
-        responseCode = "200",
-        description = "Permission updated successfully"
-    )
-    @APIResponse(
-        responseCode = "404",
-        description = "Permission not found"
-    )
-    @RequestBody(
-        description = "Permission update data",
-        required = true,
-        content = @Content(
-            mediaType = "application/json",
-            examples = @ExampleObject(
-                name = "Update Permission Example",
-                value = """
-                {
-                    "permissionId": "550e8400-e29b-41d4-a716-446655440000",
-                    "code": "VIEW_DETAILED_REPORTS",
-                    "name": "View Detailed Reports",
-                    "description": "Allows viewing of detailed system reports and analytics"
-                }
-                """
-            )
-        )
-    )
-    public Response updatePermission(@PathParam("permissionId") UUID permissionId, @Valid UpdatePermissionCommand cmd) {
-        Log.info("Request received: PUT /permissions/" + permissionId + " - Updating permission to code: " + cmd.code());
-        try {
-            updatePermission.execute(cmd);
-            Log.info("Request successful: PUT /permissions/" + permissionId + " - Permission updated successfully to code: " + cmd.code());
-            return Response.ok().build();
-        } catch (Exception e) {
-            Log.error("Request failed: PUT /permissions/" + permissionId + " - " + e.getMessage());
-            throw e;
-        }
-    }
-
-    /**
-     * Deletes a permission from the system.
-     * 
-     * Permanently removes a permission and all its associations with roles.
-     * This operation should be used carefully as it affects access control
-     * for all roles that currently have this permission.
-     * 
-     * @param permissionId the unique identifier of the permission to delete
-     * @return HTTP 204 No Content when the permission is successfully deleted
-     */
-    @DELETE
-    @Path("/permissions/{permissionId}")
-    @Operation(
-        summary = "Delete permission",
-        description = "Permanently deletes a permission from the system"
-    )
-    @APIResponse(
-        responseCode = "204",
-        description = "Permission deleted successfully"
-    )
-    @APIResponse(
-        responseCode = "404",
-        description = "Permission not found"
-    )
-    public Response deletePermission(@PathParam("permissionId") UUID permissionId, @Valid DeletePermissionCommand cmd) {
-        Log.info("Request received: DELETE /permissions/" + permissionId + " - Deleting permission");
-        try {
-            deletePermission.execute(cmd);
-            Log.info("Request successful: DELETE /permissions/" + permissionId + " - Permission deleted successfully");
-            return Response.noContent().build();
-        } catch (Exception e) {
-            Log.error("Request failed: DELETE /permissions/" + permissionId + " - " + e.getMessage());
             throw e;
         }
     }

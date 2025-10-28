@@ -9,6 +9,7 @@ import org.access.domain.repository.UserRepository;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotAuthorizedException;
 
 /**
@@ -31,6 +32,7 @@ public class AuthenticateUser {
      * @return an AuthenticationResponse with the JWT token
      * @throws NotAuthorizedException if authentication fails
      */
+    @Transactional
     public AuthenticationResponse execute(LoginCommand command) {
         // Find user by email
         EmailAddress email = new EmailAddress(command.email());

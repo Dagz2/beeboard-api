@@ -1,10 +1,13 @@
 package org.access.application.service;
 
 import io.smallrye.jwt.build.Jwt;
+import org.access.domain.model.Role;
 import org.access.domain.model.User;
+import org.access.domain.repository.RoleRepository;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -15,6 +18,9 @@ import java.util.HashSet;
  */
 @ApplicationScoped
 public class JwtService {
+
+    @Inject
+    RoleRepository roleRepository;
 
     @ConfigProperty(name = "mp.jwt.verify.issuer", defaultValue = "beeboard-api")
     String issuer;
@@ -32,14 +38,19 @@ public class JwtService {
         Instant now = Instant.now();
         Instant expirationTime = now.plusSeconds(tokenDuration);
 
+        // Retrieve role to get the role code (DIRECTOR, HR_MANAGER, etc.)
+        Role role = roleRepository.findById(user.getRoleId())
+                .orElseThrow(() -> new IllegalStateException("Role not found for user: " + user.getId().id()));
+
         return Jwt.issuer(issuer)
                 .upn(user.getEmail().value()) // User Principal Name (email)
                 .subject(user.getId().id().toString()) // Subject (user ID)
-                .groups(new HashSet<>(Arrays.asList(user.getRoleId().id().toString()))) // Groups (role)
+                .groups(new HashSet<>(Arrays.asList(role.code().value()))) // Groups (role CODE, not UUID)
                 .issuedAt(now)
                 .expiresAt(expirationTime)
                 .claim("fullName", user.getFullName().firstName() + " " + user.getFullName().lastName())
                 .claim("roleId", user.getRoleId().id().toString())
+                .claim("roleCode", role.code().value())
                 .sign();
     }
 
@@ -54,14 +65,19 @@ public class JwtService {
         Instant now = Instant.now();
         Instant expirationTime = now.plusSeconds(durationInSeconds);
 
+        // Retrieve role to get the role code (DIRECTOR, HR_MANAGER, etc.)
+        Role role = roleRepository.findById(user.getRoleId())
+                .orElseThrow(() -> new IllegalStateException("Role not found for user: " + user.getId().id()));
+
         return Jwt.issuer(issuer)
                 .upn(user.getEmail().value())
                 .subject(user.getId().id().toString())
-                .groups(new HashSet<>(Arrays.asList(user.getRoleId().id().toString())))
+                .groups(new HashSet<>(Arrays.asList(role.code().value()))) // Groups (role CODE, not UUID)
                 .issuedAt(now)
                 .expiresAt(expirationTime)
                 .claim("fullName", user.getFullName().firstName() + " " + user.getFullName().lastName())
                 .claim("roleId", user.getRoleId().id().toString())
+                .claim("roleCode", role.code().value())
                 .sign();
     }
 }
