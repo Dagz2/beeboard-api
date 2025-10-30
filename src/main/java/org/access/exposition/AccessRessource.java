@@ -7,7 +7,6 @@ import org.access.application.dto.command.user.CreateUserCommand;
 import org.access.application.dto.command.user.DeleteUserCommand;
 import org.access.application.dto.command.user.ExtendContractCommand;
 import org.access.application.dto.command.user.LockUserCommand;
-import org.access.application.dto.command.user.RecordActivityCommand;
 import org.access.application.dto.command.user.TerminateContractCommand;
 import org.access.application.dto.command.user.UnlockUserCommand;
 import org.access.application.dto.command.role.CreateRoleCommand;
@@ -57,7 +56,6 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 @ApplicationScoped
 public class AccessRessource {
 
-
     // User command use cases
     @Inject
     CreateUser createUser;
@@ -73,8 +71,6 @@ public class AccessRessource {
     LockUser lockUser;
     @Inject
     UnlockUser unlockUser;
-    @Inject
-    RecordActivity recordActivity;
     @Inject
     TerminateContract terminateContract;
     @Inject
@@ -192,6 +188,21 @@ public class AccessRessource {
         responseCode = "404",
         description = "User not found"
     )
+    @RequestBody(
+        description = "User lock data",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Lock User Example",
+                value = """
+                {
+                    "userId": "550e8400-e29b-41d4-a716-446655440000"
+                }
+                """
+            )
+        )
+    )
     public Response lockUser(@PathParam("userId") UUID userId, @Valid LockUserCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/lock - Locking user");
         try {
@@ -228,6 +239,21 @@ public class AccessRessource {
     @APIResponse(
         responseCode = "404",
         description = "User not found"
+    )
+    @RequestBody(
+        description = "User unlock data",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Unlock User Example",
+                value = """
+                {
+                    "userId": "550e8400-e29b-41d4-a716-446655440000"
+                }
+                """
+            )
+        )
     )
     public Response unlockUser(@PathParam("userId") UUID userId, @Valid UnlockUserCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/unlock - Unlocking user");
@@ -266,6 +292,22 @@ public class AccessRessource {
         responseCode = "404",
         description = "User not found"
     )
+    @RequestBody(
+        description = "Role assignment data",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Assign Role Example",
+                value = """
+                {
+                    "userId": "550e8400-e29b-41d4-a716-446655440000",
+                    "roleId": "660e8400-e29b-41d4-a716-446655440001"
+                }
+                """
+            )
+        )
+    )
     public Response assignNewRole(@PathParam("userId") UUID userId, @Valid AssignNewRoleCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/role - Assigning new role to user");
         try {
@@ -302,6 +344,23 @@ public class AccessRessource {
         responseCode = "404",
         description = "User not found"
     )
+    @RequestBody(
+        description = "Name change data",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Change Full Name Example",
+                value = """
+                {
+                    "userId": "550e8400-e29b-41d4-a716-446655440000",
+                    "firstName": "Jane",
+                    "lastName": "Smith"
+                }
+                """
+            )
+        )
+    )
     public Response changeFullName(@PathParam("userId") UUID userId, @Valid ChangeFullNameCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/name - Changing user full name");
         try {
@@ -337,6 +396,22 @@ public class AccessRessource {
     @APIResponse(
         responseCode = "404",
         description = "User not found"
+    )
+    @RequestBody(
+        description = "Email change data",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Change Email Example",
+                value = """
+                {
+                    "userId": "550e8400-e29b-41d4-a716-446655440000",
+                    "email": "jane.smith@newcompany.com"
+                }
+                """
+            )
+        )
     )
     public Response changeMail(@PathParam("userId") UUID userId, @Valid ChangeMailCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/email - Changing user email");
@@ -379,6 +454,22 @@ public class AccessRessource {
         responseCode = "400",
         description = "New end date must be after the current one"
     )
+    @RequestBody(
+        description = "Contract extension data",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Extend Contract Example",
+                value = """
+                {
+                    "userId": "550e8400-e29b-41d4-a716-446655440000",
+                    "newEndDate": "2026-12-31"
+                }
+                """
+            )
+        )
+    )
     public Response extendContract(@PathParam("userId") UUID userId, @Valid ExtendContractCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/contract - Extending user contract");
         try {
@@ -416,6 +507,21 @@ public class AccessRessource {
         responseCode = "404",
         description = "User not found"
     )
+    @RequestBody(
+        description = "Contract termination data",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Terminate Contract Example",
+                value = """
+                {
+                    "userId": "550e8400-e29b-41d4-a716-446655440000"
+                }
+                """
+            )
+        )
+    )
     public Response terminateContract(@PathParam("userId") UUID userId, @Valid TerminateContractCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/contract/terminate - Terminating user contract");
         try {
@@ -428,40 +534,6 @@ public class AccessRessource {
         }
     }
 
-    /**
-     * Records user activity.
-     *
-     * Updates the user's last activity timestamp to track system usage.
-     *
-     * @param userId the unique identifier of the user
-     * @param cmd the command containing the user ID
-     * @return HTTP 200 OK when the activity is successfully recorded
-     */
-    @PUT
-    @Path("/users/{userId}/activity")
-    @Operation(
-        summary = "Record user activity",
-        description = "Updates the user's last activity timestamp"
-    )
-    @APIResponse(
-        responseCode = "200",
-        description = "Activity recorded successfully"
-    )
-    @APIResponse(
-        responseCode = "404",
-        description = "User not found"
-    )
-    public Response recordActivity(@PathParam("userId") UUID userId, @Valid RecordActivityCommand cmd) {
-        Log.info("Request received: PUT /users/" + userId + "/activity - Recording user activity");
-        try {
-            recordActivity.execute(cmd);
-            Log.info("Request successful: PUT /users/" + userId + "/activity - Activity recorded successfully");
-            return Response.ok().build();
-        } catch (Exception e) {
-            Log.error("Request failed: PUT /users/" + userId + "/activity - " + e.getMessage());
-            throw e;
-        }
-    }
 
     /**
      * Permanently deletes a user from the system.
@@ -493,6 +565,21 @@ public class AccessRessource {
     @APIResponse(
         responseCode = "400",
         description = "User must be locked before deletion"
+    )
+    @RequestBody(
+        description = "User deletion data",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Delete User Example",
+                value = """
+                {
+                    "userId": "550e8400-e29b-41d4-a716-446655440000"
+                }
+                """
+            )
+        )
     )
     public Response deleteUser(@PathParam("userId") UUID userId, @Valid DeleteUserCommand cmd) {
         Log.info("Request received: DELETE /users/" + userId + " - Deleting user");
@@ -744,6 +831,21 @@ public class AccessRessource {
         responseCode = "404",
         description = "Role not found"
     )
+    @RequestBody(
+        description = "Role deletion data",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Delete Role Example",
+                value = """
+                {
+                    "roleId": "550e8400-e29b-41d4-a716-446655440000"
+                }
+                """
+            )
+        )
+    )
     public Response deleteRole(@PathParam("roleId") UUID roleId, @Valid DeleteRoleCommand cmd) {
         Log.info("Request received: DELETE /roles/" + roleId + " - Deleting role");
         try {
@@ -957,7 +1059,6 @@ public class AccessRessource {
             throw e;
         }
     }
-
     
     /**
      * Updates an existing permission's information.
@@ -1038,6 +1139,21 @@ public class AccessRessource {
     @APIResponse(
         responseCode = "404",
         description = "Permission not found"
+    )
+    @RequestBody(
+        description = "Permission deletion data",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Delete Permission Example",
+                value = """
+                {
+                    "permissionId": "550e8400-e29b-41d4-a716-446655440000"
+                }
+                """
+            )
+        )
     )
     public Response deletePermission(@PathParam("permissionId") UUID permissionId, @Valid DeletePermissionCommand cmd) {
         Log.info("Request received: DELETE /permissions/" + permissionId + " - Deleting permission");
