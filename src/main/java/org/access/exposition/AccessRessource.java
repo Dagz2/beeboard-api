@@ -3,6 +3,7 @@ package org.access.exposition;
 import org.access.application.dto.command.user.AssignNewRoleCommand;
 import org.access.application.dto.command.user.ChangeFullNameCommand;
 import org.access.application.dto.command.user.ChangeMailCommand;
+import org.access.application.dto.command.user.ChangePasswordCommand;
 import org.access.application.dto.command.user.CreateUserCommand;
 import org.access.application.dto.command.user.DeleteUserCommand;
 import org.access.application.dto.command.user.ExtendContractCommand;
@@ -63,6 +64,8 @@ public class AccessRessource {
     ChangeFullName changeFullName;
     @Inject
     ChangeMail changeMail;
+    @Inject
+    ChangePassword changePassword;
     @Inject
     AssignNewRole assignNewRole;
     @Inject
@@ -421,6 +424,64 @@ public class AccessRessource {
             return Response.ok().build();
         } catch (Exception e) {
             Log.error("Request failed: PUT /users/" + userId + "/email - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Changes a user's password.
+     *
+     * Updates the user's password with a new secure password that meets all
+     * security requirements (minimum 32 characters, at least one digit, at least one special character).
+     * The password is hashed using BCrypt before being stored.
+     *
+     * @param userId the unique identifier of the user
+     * @param cmd the command containing the new password
+     * @return HTTP 200 OK when the password is successfully changed
+     */
+    @PUT
+    @Path("/users/{userId}/password")
+    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @Operation(
+        summary = "Change user's password",
+        description = "Updates the user's password with a new secure password"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Password changed successfully"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "User not found"
+    )
+    @APIResponse(
+        responseCode = "400",
+        description = "Invalid password format or validation failed"
+    )
+    @RequestBody(
+        description = "Password change data",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Change Password Example",
+                value = """
+                {
+                    "userId": "550e8400-e29b-41d4-a716-446655440000",
+                    "newPassword": "MySecurePassword123!@#$%2024NewPass"
+                }
+                """
+            )
+        )
+    )
+    public Response changePassword(@PathParam("userId") UUID userId, @Valid ChangePasswordCommand cmd) {
+        Log.info("Request received: PUT /users/" + userId + "/password - Changing user password");
+        try {
+            changePassword.execute(cmd);
+            Log.info("Request successful: PUT /users/" + userId + "/password - Password changed successfully");
+            return Response.ok().build();
+        } catch (Exception e) {
+            Log.error("Request failed: PUT /users/" + userId + "/password - " + e.getMessage());
             throw e;
         }
     }
