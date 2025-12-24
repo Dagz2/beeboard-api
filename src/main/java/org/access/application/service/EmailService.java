@@ -47,7 +47,7 @@ public class EmailService {
         String resetLink = frontendBaseUrl + "/reset-password?token=" + token.value();
         String fullNameStr = fullName.firstName() + " " + fullName.lastName();
 
-        String subject = "Réinitialisation de mot de passe - Beeboard";
+        String subject = "Password Reset - Beeboard";
         String htmlBody = buildPasswordResetEmailHtml(fullNameStr, resetLink);
         String textBody = buildPasswordResetEmailText(fullNameStr, resetLink);
 
@@ -121,22 +121,23 @@ public class EmailService {
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>Réinitialisation de mot de passe</h1>
+                        <h1>Password Reset</h1>
+                        <p style="font-style: italic; margin-top: 10px;">"Identity theft is not a joke, Jim! Millions of families suffer every year!" - Dwight Schrute</p>
                     </div>
                     <div class="content">
-                        <p>Bonjour %s,</p>
-                        <p>Vous avez demandé à réinitialiser votre mot de passe pour votre compte Beeboard.</p>
-                        <p>Cliquez sur le bouton ci-dessous pour réinitialiser votre mot de passe :</p>
+                        <p>Hello %s,</p>
+                        <p>You have requested to reset your password for your Beeboard account.</p>
+                        <p>Click the button below to reset your password:</p>
                         <p style="text-align: center;">
-                            <a href="%s" class="button">Réinitialiser mon mot de passe</a>
+                            <a href="%s" class="button">Reset my password</a>
                         </p>
-                        <p class="warning">⚠️ Ce lien expire dans 15 minutes.</p>
-                        <p>Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email en toute sécurité.</p>
-                        <p>Pour des raisons de sécurité, ce lien ne peut être utilisé qu'une seule fois.</p>
+                        <p class="warning">This link expires in 15 minutes.</p>
+                        <p>If you did not request this reset, you can safely ignore this email.</p>
+                        <p>For security reasons, this link can only be used once.</p>
                     </div>
                     <div class="footer">
-                        <p><strong>Beeboard - Système de gestion des accès</strong></p>
-                        <p>Ceci est un email automatique, merci de ne pas répondre.</p>
+                        <p><strong>Beeboard - Access Management System</strong></p>
+                        <p>This is an automated email, please do not reply.</p>
                     </div>
                 </div>
             </body>
@@ -153,24 +154,25 @@ public class EmailService {
      */
     private String buildPasswordResetEmailText(String fullName, String resetLink) {
         return """
-            Réinitialisation de mot de passe - Beeboard
+            Password Reset - Beeboard
+            "Identity theft is not a joke, Jim! Millions of families suffer every year!" - Dwight Schrute
 
-            Bonjour %s,
+            Hello %s,
 
-            Vous avez demandé à réinitialiser votre mot de passe pour votre compte Beeboard.
+            You have requested to reset your password for your Beeboard account.
 
-            Cliquez sur ce lien pour réinitialiser votre mot de passe :
+            Click this link to reset your password:
             %s
 
-            ⚠️ ATTENTION : Ce lien expire dans 15 minutes.
+            WARNING: This link expires in 15 minutes.
 
-            Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email en toute sécurité.
+            If you did not request this reset, you can safely ignore this email.
 
-            Pour des raisons de sécurité, ce lien ne peut être utilisé qu'une seule fois.
+            For security reasons, this link can only be used once.
 
             ---
-            Beeboard - Système de gestion des accès
-            Ceci est un email automatique, merci de ne pas répondre.
+            Beeboard - Access Management System
+            This is an automated email, please do not reply.
             """.formatted(fullName, resetLink);
     }
 }

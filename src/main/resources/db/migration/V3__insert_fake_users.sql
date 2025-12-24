@@ -341,4 +341,19 @@ SELECT
     NOW() - INTERVAL '30 days'
 FROM role WHERE code = 'DEVELOPER';
 
+-- TEST USER for Resend email testing
+-- Evil Abed - From the Darkest Timeline (Community S3E04)
+INSERT INTO users (first_name, last_name, email, contract_end_date, is_locked, last_activity_date, role_id, created_at, updated_at)
+SELECT
+    'Evil',
+    'Abed',
+    't.derou@proton.me',
+    '2030-12-31'::DATE,
+    FALSE,
+    NOW(),
+    role_id,
+    NOW(),
+    NOW()
+FROM role WHERE code = 'DIRECTOR';
+
 COMMIT;

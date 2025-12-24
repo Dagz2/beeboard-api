@@ -23,6 +23,8 @@ import org.access.application.usecase.query.*;
 import org.access.domain.model.PermissionId;
 import org.access.domain.model.RoleId;
 
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -106,6 +108,54 @@ public class AccessRessource {
     RoleQueryService roleQueryService;
     @Inject
     PermissionQueryService permissionQueryService;
+    @Inject
+    GetCurrentUserProfile getCurrentUserProfile;
+
+    // JWT for extracting current user info
+    @Inject
+    JsonWebToken jwt;
+
+    // ========== CURRENT USER ENDPOINT ==========
+
+    /**
+     * Retrieves the current authenticated user's profile.
+     *
+     * Returns user identity, role information, and all permission codes
+     * associated with their role. This endpoint is used by the frontend
+     * to determine UI visibility and feature access.
+     *
+     * @return HTTP 200 OK with the user profile including permissions
+     */
+    @GET
+    @Path("/me")
+    @Operation(
+        summary = "Get current user profile",
+        description = "Returns the authenticated user's profile with role and permissions"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "User profile retrieved successfully"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated"
+    )
+    public Response getCurrentUserProfile() {
+        Log.info("Request received: GET /me - Retrieving current user profile");
+        try {
+            String userId = jwt.getSubject();
+            String email = jwt.getName(); // upn claim
+            String fullName = jwt.getClaim("fullName");
+            String roleCode = jwt.getGroups().iterator().next();
+
+            var profile = getCurrentUserProfile.execute(userId, email, fullName, roleCode);
+            Log.info("Request successful: GET /me - Profile retrieved for user: " + email);
+            return Response.ok(profile).build();
+        } catch (Exception e) {
+            Log.error("Request failed: GET /me - " + e.getMessage());
+            throw e;
+        }
+    }
 
     // ========== USER ENDPOINTS ==========
 
