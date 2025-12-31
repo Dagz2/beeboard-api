@@ -51,6 +51,22 @@ public class PermissionEntity extends PanacheEntityBase {
     @Column(name = "description", length = 100, nullable = false)
     private String description;
 
+    /**
+     * Security tier classification of this permission.
+     * Determines which roles can grant or revoke this permission.
+     */
+    @NotNull
+    @Column(name = "tier", length = 10, nullable = false)
+    private String tier;
+
+    /**
+     * Indicates if this is a system-protected permission.
+     * System permissions can only be modified by SUPER_ADMIN.
+     */
+    @NotNull
+    @Column(name = "is_system", nullable = false)
+    private boolean isSystem;
+
     // -------------------- Getters & Setters --------------------
 
     public UUID getPermissionId() {
@@ -83,5 +99,21 @@ public class PermissionEntity extends PanacheEntityBase {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getTier() {
+        return tier;
+    }
+
+    public void setTier(String tier) {
+        this.tier = tier;
+    }
+
+    public boolean isSystem() {
+        return isSystem;
+    }
+
+    public void setSystem(boolean system) {
+        isSystem = system;
     }
 }

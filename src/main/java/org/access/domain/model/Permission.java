@@ -4,12 +4,16 @@ import java.util.Objects;
 
 /**
  * Aggregate Root representing a system permission.
- * 
+ *
  * A {@code Permission} defines an atomic capability that can be granted to roles.
  * It has a stable business identity and can be created, modified, or deleted independently.
  *
  * This aggregate is used to manage the global permission catalog and can be referenced
  * by other aggregates (such as {@code Role}) via {@link PermissionId}.
+ *
+ * Each permission is classified by a {@link SecurityTier} that determines which roles
+ * can grant or revoke it. System permissions (marked as {@code isSystem = true}) are
+ * protected and can only be modified by SUPER_ADMIN (TIER_0).
  */
 public class Permission {
 
@@ -17,33 +21,57 @@ public class Permission {
     private PermissionCode code;
     private PermissionName name;
     private String description;
+    private SecurityTier tier;
+    private boolean isSystem;
 
     // -------------------- Creation --------------------
 
     /**
-     * Creates a new Permission.
+     * Creates a new Permission with full parameters.
      *
      * @param id          the unique identifier of the permission
      * @param code        the functional code of the permission (e.g. "VIEW_TASKS")
+     * @param name        the human-readable name of the permission
      * @param description a human-readable description of what this permission allows
-     * @throws NullPointerException if any parameter is null
+     * @param tier        the security tier classification
+     * @param isSystem    whether this is a system-protected permission
+     * @throws NullPointerException if any required parameter is null
      */
-    public Permission(PermissionId id, PermissionCode code, PermissionName name, String description) {
+    public Permission(PermissionId id, PermissionCode code, PermissionName name, String description,
+                      SecurityTier tier, boolean isSystem) {
         this.id = Objects.requireNonNull(id, "Permission ID cannot be null.");
         this.code = Objects.requireNonNull(code, "Permission code cannot be null.");
         this.name = Objects.requireNonNull(name, "Permission name cannot be null.");
         this.description = Objects.requireNonNull(description, "Permission description cannot be null.");
+        this.tier = Objects.requireNonNull(tier, "Security tier cannot be null.");
+        this.isSystem = isSystem;
     }
 
     /**
-     * Factory method to create a new Permission
+     * Factory method to create a new standard Permission (TIER_2, non-system).
      *
-     * @param code the functional code of the permission (e.g. "VIEW_TASKS")
+     * @param code        the functional code of the permission (e.g. "VIEW_TASKS")
+     * @param name        the human-readable name of the permission
      * @param description a human-readable description of what this permission allows
-     * @return a new Permission instance
+     * @return a new Permission instance with default tier (TIER_2) and isSystem=false
      */
     public static Permission create(PermissionCode code, PermissionName name, String description) {
-        return new Permission(PermissionId.newId(), code, name, description);
+        return new Permission(PermissionId.newId(), code, name, description, SecurityTier.defaultTier(), false);
+    }
+
+    /**
+     * Factory method to create a new Permission with explicit tier and system flag.
+     *
+     * @param code        the functional code of the permission
+     * @param name        the human-readable name of the permission
+     * @param description a human-readable description of what this permission allows
+     * @param tier        the security tier classification
+     * @param isSystem    whether this is a system-protected permission
+     * @return a new Permission instance
+     */
+    public static Permission create(PermissionCode code, PermissionName name, String description,
+                                    SecurityTier tier, boolean isSystem) {
+        return new Permission(PermissionId.newId(), code, name, description, tier, isSystem);
     }
 
     // -------------------- Domain methods --------------------
@@ -111,6 +139,25 @@ public class Permission {
      */
     public String description() {
         return description;
+    }
+
+    /**
+     * Gets the security tier of this permission.
+     *
+     * @return the permission's security tier
+     */
+    public SecurityTier tier() {
+        return tier;
+    }
+
+    /**
+     * Checks if this permission is a system-protected permission.
+     * System permissions cannot be modified or deleted except by SUPER_ADMIN (TIER_0).
+     *
+     * @return true if this is a system permission
+     */
+    public boolean isSystem() {
+        return isSystem;
     }
 
     // -------------------- Overrides --------------------

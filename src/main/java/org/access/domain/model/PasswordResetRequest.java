@@ -13,6 +13,7 @@ public class PasswordResetRequest {
     private final PasswordResetRequestId id;
     private final UserId userId;
     private final ResetToken token;
+    
     private final Instant expiresAt;
     private boolean isUsed;
     private final AuditInfo auditInfo;

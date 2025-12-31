@@ -86,7 +86,7 @@ AND p.code IN (
     'NOTE_VIEW_ALL',
     'TASK_VIEW_ALL',
     'REPORT_VIEW_ALL', 'REPORT_GENERATE',
-    'AUDIT_VIEW', 'HARD_DELETE'
+    'AUDIT_VIEW'
 );
 
 -- HR_MANAGER (User management)

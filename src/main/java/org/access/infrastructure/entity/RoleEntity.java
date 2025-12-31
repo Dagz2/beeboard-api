@@ -60,7 +60,23 @@ public class RoleEntity extends PanacheEntityBase {
     )
     private Set<PermissionEntity> permissions = new HashSet<>();
 
-    
+    /**
+     * Security tier classification of this role.
+     * Determines the privilege level of users with this role.
+     */
+    @NotNull
+    @Column(name = "tier", length = 10, nullable = false)
+    private String tier;
+
+    /**
+     * Indicates if this is a system-protected role.
+     * System roles cannot be deleted and their core properties
+     * cannot be modified except by SUPER_ADMIN.
+     */
+    @NotNull
+    @Column(name = "is_system", nullable = false)
+    private boolean isSystem;
+
     // -------------------- Getters & Setters --------------------
 
     public UUID getRoleId() {
@@ -102,5 +118,21 @@ public class RoleEntity extends PanacheEntityBase {
 
     public void setPermissions(Set<PermissionEntity> permissions) {
         this.permissions = permissions;
+    }
+
+    public String getTier() {
+        return tier;
+    }
+
+    public void setTier(String tier) {
+        this.tier = tier;
+    }
+
+    public boolean isSystem() {
+        return isSystem;
+    }
+
+    public void setSystem(boolean system) {
+        isSystem = system;
     }
 }

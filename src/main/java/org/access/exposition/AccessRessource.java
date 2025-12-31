@@ -25,7 +25,6 @@ import org.access.domain.model.RoleId;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
-import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -34,6 +33,9 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.UUID;
 import io.quarkus.logging.Log;
+
+import org.access.exposition.security.RequiresPermission;
+import org.access.exposition.security.SecurityContextProvider;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -55,7 +57,6 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Access Management", description = "Endpoints for managing users, roles, and permissions")
 @SecurityRequirement(name = "JWT")
-@RolesAllowed({"DIRECTOR", "HR_MANAGER", "PROJECT_MANAGER", "TECH_LEAD", "SENIOR_DEVELOPER", "DEVELOPER", "INTERN", "EXTERNAL"})
 @ApplicationScoped
 public class AccessRessource {
 
@@ -115,6 +116,10 @@ public class AccessRessource {
     @Inject
     JsonWebToken jwt;
 
+    // Security context provider for permission-based authorization
+    @Inject
+    SecurityContextProvider securityContextProvider;
+
     // ========== CURRENT USER ENDPOINT ==========
 
     /**
@@ -172,7 +177,7 @@ public class AccessRessource {
      */
     @POST
     @Path("/users")
-    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @RequiresPermission("USER_CREATE")
     @Operation(
         summary = "Create a new user",
         description = "Creates a new user with personal information, role assignment, and contract details"
@@ -207,7 +212,7 @@ public class AccessRessource {
     public Response createUser(@Valid CreateUserCommand cmd) {
         Log.info("Request received: POST /users - Creating user: " + cmd.firstName() + " " + cmd.lastName());
         try {
-            createUser.execute(cmd);
+            createUser.execute(cmd, securityContextProvider.getSecurityContext());
             Log.info("Request successful: POST /users - User created successfully: " + cmd.firstName() + " " + cmd.lastName());
             return Response.status(Response.Status.CREATED).build();
         } catch (Exception e) {
@@ -228,7 +233,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/users/{userId}/lock")
-    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @RequiresPermission("USER_LOCK")
     @Operation(
         summary = "Lock user account",
         description = "Locks a user account to prevent system access"
@@ -259,7 +264,7 @@ public class AccessRessource {
     public Response lockUser(@PathParam("userId") UUID userId, @Valid LockUserCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/lock - Locking user");
         try {
-            lockUser.execute(cmd);
+            lockUser.execute(cmd, securityContextProvider.getSecurityContext());
             Log.info("Request successful: PUT /users/" + userId + "/lock - User locked successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -280,7 +285,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/users/{userId}/unlock")
-    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @RequiresPermission("USER_LOCK")
     @Operation(
         summary = "Unlock user account",
         description = "Unlocks a previously locked user account to restore system access"
@@ -311,7 +316,7 @@ public class AccessRessource {
     public Response unlockUser(@PathParam("userId") UUID userId, @Valid UnlockUserCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/unlock - Unlocking user");
         try {
-            unlockUser.execute(cmd);
+            unlockUser.execute(cmd, securityContextProvider.getSecurityContext());
             Log.info("Request successful: PUT /users/" + userId + "/unlock - User unlocked successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -332,7 +337,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/users/{userId}/role")
-    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @RequiresPermission({"ASSIGN_CRITICAL_ROLES", "ASSIGN_STANDARD_ROLES", "ASSIGN_BASIC_ROLES"})
     @Operation(
         summary = "Assign new role to user",
         description = "Updates the user's role assignment"
@@ -364,7 +369,7 @@ public class AccessRessource {
     public Response assignNewRole(@PathParam("userId") UUID userId, @Valid AssignNewRoleCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/role - Assigning new role to user");
         try {
-            assignNewRole.execute(cmd);
+            assignNewRole.execute(cmd, securityContextProvider.getSecurityContext());
             Log.info("Request successful: PUT /users/" + userId + "/role - Role assigned successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -384,7 +389,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/users/{userId}/name")
-    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @RequiresPermission("USER_UPDATE")
     @Operation(
         summary = "Change user's full name",
         description = "Updates the user's first name and last name"
@@ -437,7 +442,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/users/{userId}/email")
-    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @RequiresPermission("USER_UPDATE")
     @Operation(
         summary = "Change user's email",
         description = "Updates the user's email address"
@@ -491,7 +496,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/users/{userId}/password")
-    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @RequiresPermission("USER_UPDATE")
     @Operation(
         summary = "Change user's password",
         description = "Updates the user's password with a new secure password"
@@ -548,7 +553,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/users/{userId}/contract")
-    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @RequiresPermission("USER_UPDATE")
     @Operation(
         summary = "Extend user's contract",
         description = "Updates the user's contract end date to a future date"
@@ -605,7 +610,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/users/{userId}/contract/terminate")
-    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @RequiresPermission("USER_UPDATE")
     @Operation(
         summary = "Terminate user's contract",
         description = "Immediately terminates the user's contract and locks their account"
@@ -660,7 +665,7 @@ public class AccessRessource {
      */
     @DELETE
     @Path("/users/{userId}")
-    @RolesAllowed({"DIRECTOR", "HR_MANAGER"})
+    @RequiresPermission("USER_DELETE")
     @Operation(
         summary = "Delete user",
         description = "Permanently deletes a user from the system. User must be locked before deletion."
@@ -821,7 +826,7 @@ public class AccessRessource {
      */
     @POST
     @Path("/roles")
-    @RolesAllowed("DIRECTOR")
+    @RequiresPermission("MANAGE_ROLES")
     @Operation(
         summary = "Create a new role",
         description = "Creates a new role with a unique code and descriptive name"
@@ -874,7 +879,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/roles/{roleId}")
-    @RolesAllowed("DIRECTOR")
+    @RequiresPermission("MANAGE_ROLES")
     @Operation(
         summary = "Update role",
         description = "Updates an existing role's information"
@@ -929,7 +934,7 @@ public class AccessRessource {
      */
     @DELETE
     @Path("/roles/{roleId}")
-    @RolesAllowed("DIRECTOR")
+    @RequiresPermission("MANAGE_ROLES")
     @Operation(
         summary = "Delete role",
         description = "Permanently deletes a role from the system"
@@ -981,7 +986,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/roles/{roleId}/permissions/{permissionId}")
-    @RolesAllowed("DIRECTOR")
+    @RequiresPermission("MANAGE_ROLES")
     @Operation(
         summary = "Grant permission to role",
         description = "Associates a permission with a role, granting access to the specified action"
@@ -997,7 +1002,7 @@ public class AccessRessource {
     public Response grantPermission(@PathParam("roleId") UUID roleId, @PathParam("permissionId") UUID permissionId) {
         Log.info("Request received: PUT /roles/" + roleId + "/permissions/" + permissionId + " - Granting permission to role");
         try {
-            grantPermission.execute(new RoleId(roleId), new PermissionId(permissionId));
+            grantPermission.execute(new RoleId(roleId), new PermissionId(permissionId), securityContextProvider.getSecurityContext());
             Log.info("Request successful: PUT /roles/" + roleId + "/permissions/" + permissionId + " - Permission granted successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -1018,7 +1023,7 @@ public class AccessRessource {
      */
     @DELETE
     @Path("/roles/{roleId}/permissions/{permissionId}")
-    @RolesAllowed("DIRECTOR")
+    @RequiresPermission("MANAGE_ROLES")
     @Operation(
         summary = "Revoke permission from role",
         description = "Removes a permission from a role, revoking access to the specified action"
@@ -1129,7 +1134,7 @@ public class AccessRessource {
      */
     @POST
     @Path("/permissions")
-    @RolesAllowed("DIRECTOR")
+    @RequiresPermission("MANAGE_PERMISSIONS")
     @Operation(
         summary = "Create a new permission",
         description = "Creates a new permission that can be granted to roles"
@@ -1183,7 +1188,7 @@ public class AccessRessource {
      */
     @PUT
     @Path("/permissions/{permissionId}")
-    @RolesAllowed("DIRECTOR")
+    @RequiresPermission("MANAGE_PERMISSIONS")
     @Operation(
         summary = "Update permission",
         description = "Updates an existing permission's information"
@@ -1238,7 +1243,7 @@ public class AccessRessource {
      */
     @DELETE
     @Path("/permissions/{permissionId}")
-    @RolesAllowed("DIRECTOR")
+    @RequiresPermission("MANAGE_PERMISSIONS")
     @Operation(
         summary = "Delete permission",
         description = "Permanently deletes a permission from the system"

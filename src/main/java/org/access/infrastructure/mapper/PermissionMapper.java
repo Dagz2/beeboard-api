@@ -1,6 +1,10 @@
 package org.access.infrastructure.mapper;
 
-import org.access.domain.model.*;
+import org.access.domain.model.Permission;
+import org.access.domain.model.PermissionCode;
+import org.access.domain.model.PermissionId;
+import org.access.domain.model.PermissionName;
+import org.access.domain.model.SecurityTier;
 import org.access.infrastructure.entity.PermissionEntity;
 
 public class PermissionMapper {
@@ -16,10 +20,12 @@ public class PermissionMapper {
             new PermissionId(entity.getPermissionId()),
             new PermissionCode(entity.getCode()),
             new PermissionName(entity.getName()),
-            entity.getDescription()
+            entity.getDescription(),
+            SecurityTier.valueOf(entity.getTier()),
+            entity.isSystem()
         );
     }
-    
+
     /**
      * Converts a domain {@link Permission} to a JPA {@link PermissionEntity}.
      *
@@ -32,6 +38,8 @@ public class PermissionMapper {
         entity.setCode(permission.code().value());
         entity.setName(permission.name().value());
         entity.setDescription(permission.description());
+        entity.setTier(permission.tier().name());
+        entity.setSystem(permission.isSystem());
         return entity;
     }
 }

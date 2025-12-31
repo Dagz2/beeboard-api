@@ -1,11 +1,13 @@
 package org.access.application.usecase.command.user;
 
 import org.access.application.dto.command.user.CreateUserCommand;
+import org.access.application.service.AuditService;
 import org.access.domain.model.*;
 import org.access.domain.repository.UserRepository;
 import org.access.domain.repository.RoleRepository;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 /**
@@ -20,26 +22,31 @@ public class CreateUser {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final AuditService auditService;
 
     /**
      * Constructs the use case with the required repositories.
      *
      * @param userRepository the repository used to persist the new user
      * @param roleRepository the repository used to verify role existence
+     * @param auditService   the service for audit logging
      */
-    public CreateUser(UserRepository userRepository, RoleRepository roleRepository) {
+    @Inject
+    public CreateUser(UserRepository userRepository, RoleRepository roleRepository, AuditService auditService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.auditService = auditService;
     }
 
     /**
      * Executes the use case to create a new user.
      *
-     * @param command the input data needed to create the user
+     * @param command         the input data needed to create the user
+     * @param securityContext the security context of the actor performing the operation
      * @throws IllegalArgumentException if the role does not exist or input is invalid
      */
     @Transactional
-    public void execute(CreateUserCommand command) {
+    public void execute(CreateUserCommand command, SecurityContext securityContext) {
         // Validate role existence
         RoleId roleId = new RoleId(command.roleId());
         if (!roleRepository.existsById(roleId)) {
@@ -57,5 +64,8 @@ public class CreateUser {
 
         // Persist user
         userRepository.save(user);
+
+        // Audit the operation
+        auditService.record(securityContext, "CREATE_USER", "USER", user.getId().id().toString());
     }
 }

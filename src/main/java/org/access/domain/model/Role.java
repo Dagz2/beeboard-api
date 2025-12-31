@@ -9,6 +9,16 @@ import java.util.Set;
 /**
  * Entity representing a role assigned to a user.
  * A role aggregates a set of permissions and has a unique identity.
+ *
+ * Each role is classified by a {@link SecurityTier} that determines its privilege level:
+ * <ul>
+ *   <li>TIER_0 - Critical roles (SUPER_ADMIN) with full system access</li>
+ *   <li>TIER_1 - Sensitive roles (DIRECTOR) with elevated privileges</li>
+ *   <li>TIER_2 - Standard roles (HR_MANAGER and others) with normal privileges</li>
+ * </ul>
+ *
+ * System roles (marked as {@code isSystem = true}) are protected and cannot be deleted
+ * or have their core properties modified except by SUPER_ADMIN.
  */
 public class Role {
 
@@ -17,18 +27,25 @@ public class Role {
     private RoleName name;
     private final Set<PermissionId> permissions;
     private final AuditInfo auditInfo;
+    private SecurityTier tier;
+    private boolean isSystem;
 
     // -------------------- Creation --------------------
 
     /**
-     * Constructs a new Role.
+     * Constructs a new Role with full parameters.
      *
      * @param id          the role's unique identifier
+     * @param code        the functional code of the role
      * @param name        the business name of the role
      * @param permissions initial set of permissions (optional)
-     * @throws NullPointerException if id or name is null
+     * @param auditInfo   the audit information
+     * @param tier        the security tier classification
+     * @param isSystem    whether this is a system-protected role
+     * @throws NullPointerException if required parameters are null
      */
-    public Role(RoleId id, RoleCode code, RoleName name, Set<PermissionId> permissions, AuditInfo auditInfo) {
+    public Role(RoleId id, RoleCode code, RoleName name, Set<PermissionId> permissions,
+                AuditInfo auditInfo, SecurityTier tier, boolean isSystem) {
         this.id = Objects.requireNonNull(id, "Role ID cannot be null.");
         this.code = Objects.requireNonNull(code, "Role code cannot be null.");
         this.name = Objects.requireNonNull(name, "Role name cannot be null.");
@@ -36,18 +53,36 @@ public class Role {
             ? new HashSet<>(permissions)
             : new HashSet<>();
         this.auditInfo = Objects.requireNonNull(auditInfo, "AuditInfo cannot be null.");
+        this.tier = Objects.requireNonNull(tier, "Security tier cannot be null.");
+        this.isSystem = isSystem;
     }
 
     /**
-     * Factory method to create a new Role
+     * Factory method to create a new standard Role (TIER_2, non-system).
      *
-     * @param name RoleName value object
-     * @return a new Role instance
+     * @param code the functional code of the role
+     * @param name the business name of the role
+     * @return a new Role instance with default tier (TIER_2) and isSystem=false
      */
     public static Role create(RoleCode code, RoleName name) {
         Instant now = Instant.now();
         AuditInfo auditInfo = AuditInfo.of(now);
-        return new Role(RoleId.newId(), code, name, new HashSet<>(), auditInfo);
+        return new Role(RoleId.newId(), code, name, new HashSet<>(), auditInfo, SecurityTier.defaultTier(), false);
+    }
+
+    /**
+     * Factory method to create a new Role with explicit tier and system flag.
+     *
+     * @param code     the functional code of the role
+     * @param name     the business name of the role
+     * @param tier     the security tier classification
+     * @param isSystem whether this is a system-protected role
+     * @return a new Role instance
+     */
+    public static Role create(RoleCode code, RoleName name, SecurityTier tier, boolean isSystem) {
+        Instant now = Instant.now();
+        AuditInfo auditInfo = AuditInfo.of(now);
+        return new Role(RoleId.newId(), code, name, new HashSet<>(), auditInfo, tier, isSystem);
     }
 
     // -------------------- Domain methods --------------------
@@ -157,6 +192,26 @@ public class Role {
      */
     public Set<PermissionId> permissions() {
         return Collections.unmodifiableSet(permissions);
+    }
+
+    /**
+     * Gets the security tier of this role.
+     *
+     * @return the role's security tier
+     */
+    public SecurityTier tier() {
+        return tier;
+    }
+
+    /**
+     * Checks if this role is a system-protected role.
+     * System roles (SUPER_ADMIN, DIRECTOR, HR_MANAGER) cannot be deleted
+     * and their core properties cannot be modified except by SUPER_ADMIN.
+     *
+     * @return true if this is a system role
+     */
+    public boolean isSystem() {
+        return isSystem;
     }
 
     // -------------------- Overrides --------------------
