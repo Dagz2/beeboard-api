@@ -147,4 +147,20 @@ public class PrivilegeEscalationGuard {
             throw InsufficientTierException.onlyTierZeroCanPerform(operation);
         }
     }
+
+    /**
+     * Validates that the actor can manage a user based on tier hierarchy.
+     * An actor can only manage users with a tier strictly lower in privilege (higher tier number).
+     *
+     * @param actorTier the security tier of the actor
+     * @param targetUserTier the security tier of the user being managed
+     * @throws PrivilegeEscalationException if the actor cannot manage the target user
+     */
+    public void validateUserManagement(SecurityTier actorTier, SecurityTier targetUserTier) {
+        if (!actorTier.canManage(targetUserTier)) {
+            throw PrivilegeEscalationException.cannotManageHigherTierUser(
+                actorTier.name(), targetUserTier.name()
+            );
+        }
+    }
 }

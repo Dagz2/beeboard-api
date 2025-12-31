@@ -24,4 +24,11 @@ public class PrivilegeEscalationException extends SecurityException {
                 permissionTier, actorTier)
         );
     }
+
+    public static PrivilegeEscalationException cannotManageHigherTierUser(String actorTier, String targetUserTier) {
+        return new PrivilegeEscalationException(
+            String.format("Cannot manage user of tier %s. Actor tier %s can only manage users of lower privilege.",
+                targetUserTier, actorTier)
+        );
+    }
 }

@@ -8,22 +8,12 @@ import jakarta.interceptor.InvocationContext;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.core.Response;
 
-import org.eclipse.microprofile.jwt.JsonWebToken;
-
 import org.access.domain.model.PermissionCode;
-import org.access.domain.model.Role;
-import org.access.domain.model.RoleCode;
-import org.access.domain.model.RoleId;
-import org.access.domain.model.User;
-import org.access.domain.model.UserId;
-import org.access.domain.repository.PermissionRepository;
-import org.access.domain.repository.RoleRepository;
-import org.access.domain.repository.UserRepository;
+import org.access.domain.model.SecurityContext;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -31,24 +21,20 @@ import java.util.stream.Collectors;
  *
  * This interceptor is triggered by the {@link RequiresPermission} annotation
  * and validates that the authenticated user has the required permissions.
+ *
+ * Uses {@link SecurityContextCache} for efficient permission loading with
+ * Caffeine caching (15-minute TTL).
  */
 @Interceptor
 @RequiresPermission({})
 @Priority(Interceptor.Priority.APPLICATION)
 public class PermissionInterceptor {
 
-    private final JsonWebToken jwt;
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final PermissionRepository permissionRepository;
+    private final SecurityContextCache securityContextCache;
 
     @Inject
-    public PermissionInterceptor(JsonWebToken jwt, UserRepository userRepository,
-                                  RoleRepository roleRepository, PermissionRepository permissionRepository) {
-        this.jwt = jwt;
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.permissionRepository = permissionRepository;
+    public PermissionInterceptor(SecurityContextCache securityContextCache) {
+        this.securityContextCache = securityContextCache;
     }
 
     @AroundInvoke
@@ -59,25 +45,13 @@ public class PermissionInterceptor {
             return context.proceed();
         }
 
-        // Get user ID from JWT
-        String subject = jwt.getSubject();
-        if (subject == null) {
-            throw new ForbiddenException(Response.status(Response.Status.FORBIDDEN)
-                .entity("{\"error\": \"Authentication required\"}")
-                .build());
-        }
+        // Get security context from cache
+        SecurityContext ctx = securityContextCache.getCurrentContext();
 
-        UUID userId;
-        try {
-            userId = UUID.fromString(subject);
-        } catch (IllegalArgumentException e) {
-            throw new ForbiddenException(Response.status(Response.Status.FORBIDDEN)
-                .entity("{\"error\": \"Invalid authentication token\"}")
-                .build());
-        }
-
-        // Load user and their permissions
-        Set<String> userPermissions = loadUserPermissions(userId);
+        // Extract permission codes as strings
+        Set<String> userPermissions = ctx.permissions().stream()
+            .map(PermissionCode::value)
+            .collect(Collectors.toSet());
 
         // Check permissions based on operator
         String[] requiredPermissions = annotation.value();
@@ -110,27 +84,6 @@ public class PermissionInterceptor {
 
         // Fall back to class-level
         return context.getTarget().getClass().getAnnotation(RequiresPermission.class);
-    }
-
-    /**
-     * Loads all permission codes for the given user through their role.
-     */
-    private Set<String> loadUserPermissions(UUID userId) {
-        User user = userRepository.findById(new UserId(userId))
-            .orElseThrow(() -> new ForbiddenException(Response.status(Response.Status.FORBIDDEN)
-                .entity("{\"error\": \"User not found\"}")
-                .build()));
-
-        Role role = roleRepository.findById(user.getRoleId())
-            .orElseThrow(() -> new ForbiddenException(Response.status(Response.Status.FORBIDDEN)
-                .entity("{\"error\": \"Role not found\"}")
-                .build()));
-
-        return role.permissions().stream()
-            .map(permissionId -> permissionRepository.findById(permissionId))
-            .filter(opt -> opt.isPresent())
-            .map(opt -> opt.get().code().value())
-            .collect(Collectors.toSet());
     }
 
     /**

@@ -35,7 +35,7 @@ import java.util.UUID;
 import io.quarkus.logging.Log;
 
 import org.access.exposition.security.RequiresPermission;
-import org.access.exposition.security.SecurityContextProvider;
+import org.access.exposition.security.SecurityContextCache;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -116,9 +116,9 @@ public class AccessRessource {
     @Inject
     JsonWebToken jwt;
 
-    // Security context provider for permission-based authorization
+    // Security context cache for permission-based authorization
     @Inject
-    SecurityContextProvider securityContextProvider;
+    SecurityContextCache securityContextCache;
 
     // ========== CURRENT USER ENDPOINT ==========
 
@@ -212,7 +212,7 @@ public class AccessRessource {
     public Response createUser(@Valid CreateUserCommand cmd) {
         Log.info("Request received: POST /users - Creating user: " + cmd.firstName() + " " + cmd.lastName());
         try {
-            createUser.execute(cmd, securityContextProvider.getSecurityContext());
+            createUser.execute(cmd, securityContextCache.getCurrentContext());
             Log.info("Request successful: POST /users - User created successfully: " + cmd.firstName() + " " + cmd.lastName());
             return Response.status(Response.Status.CREATED).build();
         } catch (Exception e) {
@@ -264,7 +264,7 @@ public class AccessRessource {
     public Response lockUser(@PathParam("userId") UUID userId, @Valid LockUserCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/lock - Locking user");
         try {
-            lockUser.execute(cmd, securityContextProvider.getSecurityContext());
+            lockUser.execute(cmd, securityContextCache.getCurrentContext());
             Log.info("Request successful: PUT /users/" + userId + "/lock - User locked successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -316,7 +316,7 @@ public class AccessRessource {
     public Response unlockUser(@PathParam("userId") UUID userId, @Valid UnlockUserCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/unlock - Unlocking user");
         try {
-            unlockUser.execute(cmd, securityContextProvider.getSecurityContext());
+            unlockUser.execute(cmd, securityContextCache.getCurrentContext());
             Log.info("Request successful: PUT /users/" + userId + "/unlock - User unlocked successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -369,7 +369,7 @@ public class AccessRessource {
     public Response assignNewRole(@PathParam("userId") UUID userId, @Valid AssignNewRoleCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/role - Assigning new role to user");
         try {
-            assignNewRole.execute(cmd, securityContextProvider.getSecurityContext());
+            assignNewRole.execute(cmd, securityContextCache.getCurrentContext());
             Log.info("Request successful: PUT /users/" + userId + "/role - Role assigned successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -589,7 +589,7 @@ public class AccessRessource {
     public Response extendContract(@PathParam("userId") UUID userId, @Valid ExtendContractCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/contract - Extending user contract");
         try {
-            extendContract.execute(cmd);
+            extendContract.execute(cmd, securityContextCache.getCurrentContext());
             Log.info("Request successful: PUT /users/" + userId + "/contract - Contract extended successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -641,7 +641,7 @@ public class AccessRessource {
     public Response terminateContract(@PathParam("userId") UUID userId, @Valid TerminateContractCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/contract/terminate - Terminating user contract");
         try {
-            terminateContract.execute(cmd);
+            terminateContract.execute(cmd, securityContextCache.getCurrentContext());
             Log.info("Request successful: PUT /users/" + userId + "/contract/terminate - Contract terminated successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -700,7 +700,7 @@ public class AccessRessource {
     public Response deleteUser(@PathParam("userId") UUID userId, @Valid DeleteUserCommand cmd) {
         Log.info("Request received: DELETE /users/" + userId + " - Deleting user");
         try {
-            deleteUser.execute(cmd);
+            deleteUser.execute(cmd, securityContextCache.getCurrentContext());
             Log.info("Request successful: DELETE /users/" + userId + " - User deleted successfully");
             return Response.noContent().build();
         } catch (Exception e) {
@@ -722,6 +722,7 @@ public class AccessRessource {
      */
     @GET
     @Path("/users/{userId}")
+    @RequiresPermission("USER_VIEW_ALL")
     @Operation(
         summary = "Get user by ID",
         description = "Retrieves a specific user by their unique identifier"
@@ -760,6 +761,7 @@ public class AccessRessource {
      */
     @GET
     @Path("/users")
+    @RequiresPermission("USER_VIEW_ALL")
     @Operation(
         summary = "Get all users",
         description = "Returns a complete list of all registered users"
@@ -791,6 +793,7 @@ public class AccessRessource {
      */
     @GET
     @Path("/users/role/{roleId}")
+    @RequiresPermission("USER_VIEW_ALL")
     @Operation(
         summary = "Get users by role",
         description = "Returns all users assigned to a specific role"
@@ -858,7 +861,7 @@ public class AccessRessource {
     public Response createRole(@Valid CreateRoleCommand cmd) {
         Log.info("Request received: POST /roles - Creating role: " + cmd.code());
         try {
-            createRole.execute(cmd);
+            createRole.execute(cmd, securityContextCache.getCurrentContext());
             Log.info("Request successful: POST /roles - Role created successfully: " + cmd.code());
             return Response.status(Response.Status.CREATED).build();
         } catch (Exception e) {
@@ -912,7 +915,7 @@ public class AccessRessource {
     public Response updateRole(@PathParam("roleId") UUID roleId, @Valid UpdateRoleCommand cmd) {
         Log.info("Request received: PUT /roles/" + roleId + " - Updating role to code: " + cmd.code());
         try {
-            updateRole.execute(cmd);
+            updateRole.execute(cmd, securityContextCache.getCurrentContext());
             Log.info("Request successful: PUT /roles/" + roleId + " - Role updated successfully to code: " + cmd.code());
             return Response.ok().build();
         } catch (Exception e) {
@@ -1002,7 +1005,7 @@ public class AccessRessource {
     public Response grantPermission(@PathParam("roleId") UUID roleId, @PathParam("permissionId") UUID permissionId) {
         Log.info("Request received: PUT /roles/" + roleId + "/permissions/" + permissionId + " - Granting permission to role");
         try {
-            grantPermission.execute(new RoleId(roleId), new PermissionId(permissionId), securityContextProvider.getSecurityContext());
+            grantPermission.execute(new RoleId(roleId), new PermissionId(permissionId), securityContextCache.getCurrentContext());
             Log.info("Request successful: PUT /roles/" + roleId + "/permissions/" + permissionId + " - Permission granted successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -1061,6 +1064,7 @@ public class AccessRessource {
      */
     @GET
     @Path("/roles/{roleId}")
+    @RequiresPermission("ROLE_VIEW")
     @Operation(
         summary = "Get role by ID",
         description = "Retrieves a specific role by its unique identifier"
@@ -1099,6 +1103,7 @@ public class AccessRessource {
      */
     @GET
     @Path("/roles")
+    @RequiresPermission("ROLE_VIEW")
     @Operation(
         summary = "Get all roles",
         description = "Returns a complete list of all defined roles"
@@ -1296,6 +1301,7 @@ public class AccessRessource {
      */
     @GET
     @Path("/permissions/{permissionId}")
+    @RequiresPermission("PERMISSION_VIEW")
     @Operation(
         summary = "Get permission by ID",
         description = "Retrieves a specific permission by its unique identifier"
@@ -1334,6 +1340,7 @@ public class AccessRessource {
      */
     @GET
     @Path("/permissions")
+    @RequiresPermission("PERMISSION_VIEW")
     @Operation(
         summary = "Get all permissions",
         description = "Returns a complete list of all defined permissions"

@@ -16,9 +16,9 @@ flowchart TB
 
     subgraph Layer2["LAYER 2: AUTHORIZATION"]
         RP["@RequiresPermission"]
-        PI[PermissionInterceptor<br/>• Load role permissions<br/>• Verify required permission]
-        SCP[SecurityContextProvider<br/>• Build SecurityContext<br/>• Request-scoped cache]
-        RP --> PI --> SCP
+        PI[PermissionInterceptor<br/>• Check permissions via cache<br/>• Verify required permission]
+        SCC[SecurityContextCache<br/>• Build SecurityContext<br/>• Caffeine cache 15min TTL<br/>• Proactive invalidation]
+        RP --> PI --> SCC
     end
 
     subgraph Layer3["LAYER 3: ANTI-ESCALATION"]
@@ -243,8 +243,21 @@ classDiagram
     }
 
     class PermissionInterceptor {
-        +intercept(InvocationContext) Object
-        -loadUserPermissions(UUID) Set~String~
+        -SecurityContextCache cache
+        +checkPermission(InvocationContext) Object
+        -getAnnotation(InvocationContext) RequiresPermission
+        -checkAccess(Set, String[], LogicalOperator) boolean
+    }
+
+    class SecurityContextCache {
+        -JsonWebToken jwt
+        -UserRepository userRepository
+        -RoleRepository roleRepository
+        -PermissionRepository permissionRepository
+        +getCurrentContext() SecurityContext
+        +loadContext(UUID) SecurityContext
+        +invalidate(UUID) void
+        +invalidateByRole(RoleId) void
     }
 
     class RequiresPermission {
@@ -258,7 +271,8 @@ classDiagram
     AuditService --> AuditLog
     AuditLog --> SecurityTier
     PermissionInterceptor ..> RequiresPermission
-    PermissionInterceptor --> SecurityContext
+    PermissionInterceptor --> SecurityContextCache
+    SecurityContextCache --> SecurityContext
 ```
 
 ## 7. Audit Data Flow
@@ -337,3 +351,95 @@ stateDiagram-v2
         UserStatusFilter rejects
     end note
 ```
+
+## 9. Token Lifecycle & Permission Caching
+
+### JWT Token Configuration
+
+| Property | Value | Description |
+|----------|-------|-------------|
+| Duration | 1 hour (3600s) | Token expiration time |
+| Issuer | beeboard-api | Token issuer identifier |
+| Algorithm | RS256 | RSA signature with SHA-256 |
+| Refresh | Not implemented | User must re-authenticate |
+
+### Permission Caching (Caffeine)
+
+| Property | Value | Description |
+|----------|-------|-------------|
+| TTL | 15 minutes | Cache entry expiration |
+| Max Size | 1000 entries | Maximum cached users |
+| Invalidation | Proactive | Triggered on role/permission changes |
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant PI as PermissionInterceptor
+    participant SCC as SecurityContextCache
+    participant CACHE as Caffeine Cache
+    participant DB as PostgreSQL
+
+    C->>PI: HTTP Request with JWT
+    PI->>SCC: getCurrentContext()
+    SCC->>SCC: Extract userId from JWT
+
+    alt Cache HIT
+        SCC->>CACHE: loadContext(userId)
+        CACHE-->>SCC: SecurityContext (cached)
+        Note over CACHE: 0 DB queries
+    else Cache MISS
+        SCC->>CACHE: loadContext(userId)
+        CACHE->>DB: SELECT user, role, permissions
+        DB-->>CACHE: User + Role + Permissions
+        CACHE-->>SCC: SecurityContext (new)
+        Note over CACHE: 3 DB queries, cached 15min
+    end
+
+    SCC-->>PI: SecurityContext
+    PI->>PI: Check permissions
+    PI-->>C: Allow/Deny
+```
+
+### Cache Invalidation Triggers
+
+| Trigger | Use Case | Invalidation Scope |
+|---------|----------|-------------------|
+| Role assignment | AssignNewRole | Single user |
+| Role update | UpdateRole | All users with role |
+| Permission grant | GrantPermission | All users with role |
+| Permission revoke | RevokePermissionFromRole | All users with role |
+
+```mermaid
+flowchart LR
+    subgraph Triggers["Invalidation Triggers"]
+        T1[AssignNewRole]
+        T2[UpdateRole]
+        T3[GrantPermission]
+        T4[RevokePermissionFromRole]
+    end
+
+    subgraph Cache["SecurityContextCache"]
+        INV1[invalidate userId]
+        INV2[invalidateByRole roleId]
+    end
+
+    subgraph Effect["Cache Effect"]
+        E1[Remove single entry]
+        E2[Remove all users with role]
+    end
+
+    T1 --> INV1 --> E1
+    T2 --> INV2 --> E2
+    T3 --> INV2 --> E2
+    T4 --> INV2 --> E2
+```
+
+### Performance Comparison
+
+| Metric | Before (No Cache) | After (Caffeine 15min) |
+|--------|-------------------|------------------------|
+| DB queries/request | 6 | 0 (if cached) |
+| DB queries/15min (100 requests) | 600 | 3 |
+| Permission check latency | ~50ms | ~1ms |
+| Memory overhead | None | ~1KB/user |

@@ -1,12 +1,14 @@
 package org.access.application.usecase.command.role;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import org.access.domain.model.PermissionId;
 import org.access.domain.model.Role;
 import org.access.domain.model.RoleId;
 import org.access.domain.repository.RoleRepository;
+import org.access.exposition.security.SecurityContextCache;
 
 /**
  * Use case for revoking a permission from a role.
@@ -18,14 +20,18 @@ import org.access.domain.repository.RoleRepository;
 public class RevokePermissionFromRole {
 
     private final RoleRepository roleRepository;
+    private final SecurityContextCache securityContextCache;
 
     /**
-     * Constructs the use case with the required role repository.
+     * Constructs the use case with the required dependencies.
      *
-     * @param roleRepository the repository used to retrieve and persist roles
+     * @param roleRepository       the repository used to retrieve and persist roles
+     * @param securityContextCache the cache for security context invalidation
      */
-    public RevokePermissionFromRole(RoleRepository roleRepository) {
+    @Inject
+    public RevokePermissionFromRole(RoleRepository roleRepository, SecurityContextCache securityContextCache) {
         this.roleRepository = roleRepository;
+        this.securityContextCache = securityContextCache;
     }
 
     /**
@@ -43,5 +49,8 @@ public class RevokePermissionFromRole {
         role.revokePermission(permissionId);
 
         roleRepository.save(role);
+
+        // Invalidate security context cache for all users with this role
+        securityContextCache.invalidateByRole(roleId);
     }
 }
