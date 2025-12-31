@@ -19,7 +19,10 @@ import org.access.application.dto.command.permission.UpdatePermissionCommand;
 import org.access.application.usecase.command.user.*;
 import org.access.application.usecase.command.role.*;
 import org.access.application.usecase.command.permission.*;
-import org.access.application.usecase.query.*;
+import org.access.application.usecase.query.UserQueryService;
+import org.access.application.usecase.query.RoleQueryService;
+import org.access.application.usecase.query.PermissionQueryService;
+import org.access.application.dto.response.UserProfileResponse;
 import org.access.domain.model.PermissionId;
 import org.access.domain.model.RoleId;
 
@@ -34,8 +37,8 @@ import jakarta.ws.rs.core.Response;
 import java.util.UUID;
 import io.quarkus.logging.Log;
 
+import org.access.application.service.SecurityContextService;
 import org.access.exposition.security.RequiresPermission;
-import org.access.exposition.security.SecurityContextCache;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -109,16 +112,14 @@ public class AccessRessource {
     RoleQueryService roleQueryService;
     @Inject
     PermissionQueryService permissionQueryService;
-    @Inject
-    GetCurrentUserProfile getCurrentUserProfile;
 
     // JWT for extracting current user info
     @Inject
     JsonWebToken jwt;
 
-    // Security context cache for permission-based authorization
+    // Security context service for permission-based authorization
     @Inject
-    SecurityContextCache securityContextCache;
+    SecurityContextService securityContextService;
 
     // ========== CURRENT USER ENDPOINT ==========
 
@@ -128,6 +129,9 @@ public class AccessRessource {
      * Returns user identity, role information, and all permission codes
      * associated with their role. This endpoint is used by the frontend
      * to determine UI visibility and feature access.
+     *
+     * This endpoint is optimized to use cached security context data
+     * and JWT claims, avoiding database queries entirely.
      *
      * @return HTTP 200 OK with the user profile including permissions
      */
@@ -148,13 +152,25 @@ public class AccessRessource {
     public Response getCurrentUserProfile() {
         Log.info("Request received: GET /me - Retrieving current user profile");
         try {
-            String userId = jwt.getSubject();
-            String email = jwt.getName(); // upn claim
-            String fullName = jwt.getClaim("fullName");
-            String roleCode = jwt.getGroups().iterator().next();
+            // Get cached security context (0 DB queries if already cached)
+            var securityContext = securityContextService.getCurrentContext();
 
-            var profile = getCurrentUserProfile.execute(userId, email, fullName, roleCode);
-            Log.info("Request successful: GET /me - Profile retrieved for user: " + email);
+            // Build profile from JWT claims + cached permissions
+            var profile = new UserProfileResponse(
+                securityContext.actorId().id(),
+                jwt.getName(), // email from upn claim
+                jwt.getClaim("fullName"),
+                new UserProfileResponse.RoleInfo(
+                    securityContext.roleCode().value(),
+                    jwt.getClaim("roleName")
+                ),
+                securityContext.permissions().stream()
+                    .map(p -> p.value())
+                    .sorted()
+                    .toList()
+            );
+
+            Log.info("Request successful: GET /me - Profile retrieved for user: " + jwt.getName());
             return Response.ok(profile).build();
         } catch (Exception e) {
             Log.error("Request failed: GET /me - " + e.getMessage());
@@ -212,7 +228,7 @@ public class AccessRessource {
     public Response createUser(@Valid CreateUserCommand cmd) {
         Log.info("Request received: POST /users - Creating user: " + cmd.firstName() + " " + cmd.lastName());
         try {
-            createUser.execute(cmd, securityContextCache.getCurrentContext());
+            createUser.execute(cmd, securityContextService.getCurrentContext());
             Log.info("Request successful: POST /users - User created successfully: " + cmd.firstName() + " " + cmd.lastName());
             return Response.status(Response.Status.CREATED).build();
         } catch (Exception e) {
@@ -264,7 +280,7 @@ public class AccessRessource {
     public Response lockUser(@PathParam("userId") UUID userId, @Valid LockUserCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/lock - Locking user");
         try {
-            lockUser.execute(cmd, securityContextCache.getCurrentContext());
+            lockUser.execute(cmd, securityContextService.getCurrentContext());
             Log.info("Request successful: PUT /users/" + userId + "/lock - User locked successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -316,7 +332,7 @@ public class AccessRessource {
     public Response unlockUser(@PathParam("userId") UUID userId, @Valid UnlockUserCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/unlock - Unlocking user");
         try {
-            unlockUser.execute(cmd, securityContextCache.getCurrentContext());
+            unlockUser.execute(cmd, securityContextService.getCurrentContext());
             Log.info("Request successful: PUT /users/" + userId + "/unlock - User unlocked successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -369,7 +385,7 @@ public class AccessRessource {
     public Response assignNewRole(@PathParam("userId") UUID userId, @Valid AssignNewRoleCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/role - Assigning new role to user");
         try {
-            assignNewRole.execute(cmd, securityContextCache.getCurrentContext());
+            assignNewRole.execute(cmd, securityContextService.getCurrentContext());
             Log.info("Request successful: PUT /users/" + userId + "/role - Role assigned successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -589,7 +605,7 @@ public class AccessRessource {
     public Response extendContract(@PathParam("userId") UUID userId, @Valid ExtendContractCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/contract - Extending user contract");
         try {
-            extendContract.execute(cmd, securityContextCache.getCurrentContext());
+            extendContract.execute(cmd, securityContextService.getCurrentContext());
             Log.info("Request successful: PUT /users/" + userId + "/contract - Contract extended successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -641,7 +657,7 @@ public class AccessRessource {
     public Response terminateContract(@PathParam("userId") UUID userId, @Valid TerminateContractCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/contract/terminate - Terminating user contract");
         try {
-            terminateContract.execute(cmd, securityContextCache.getCurrentContext());
+            terminateContract.execute(cmd, securityContextService.getCurrentContext());
             Log.info("Request successful: PUT /users/" + userId + "/contract/terminate - Contract terminated successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -700,7 +716,7 @@ public class AccessRessource {
     public Response deleteUser(@PathParam("userId") UUID userId, @Valid DeleteUserCommand cmd) {
         Log.info("Request received: DELETE /users/" + userId + " - Deleting user");
         try {
-            deleteUser.execute(cmd, securityContextCache.getCurrentContext());
+            deleteUser.execute(cmd, securityContextService.getCurrentContext());
             Log.info("Request successful: DELETE /users/" + userId + " - User deleted successfully");
             return Response.noContent().build();
         } catch (Exception e) {
@@ -861,7 +877,7 @@ public class AccessRessource {
     public Response createRole(@Valid CreateRoleCommand cmd) {
         Log.info("Request received: POST /roles - Creating role: " + cmd.code());
         try {
-            createRole.execute(cmd, securityContextCache.getCurrentContext());
+            createRole.execute(cmd, securityContextService.getCurrentContext());
             Log.info("Request successful: POST /roles - Role created successfully: " + cmd.code());
             return Response.status(Response.Status.CREATED).build();
         } catch (Exception e) {
@@ -915,7 +931,7 @@ public class AccessRessource {
     public Response updateRole(@PathParam("roleId") UUID roleId, @Valid UpdateRoleCommand cmd) {
         Log.info("Request received: PUT /roles/" + roleId + " - Updating role to code: " + cmd.code());
         try {
-            updateRole.execute(cmd, securityContextCache.getCurrentContext());
+            updateRole.execute(cmd, securityContextService.getCurrentContext());
             Log.info("Request successful: PUT /roles/" + roleId + " - Role updated successfully to code: " + cmd.code());
             return Response.ok().build();
         } catch (Exception e) {
@@ -1005,7 +1021,7 @@ public class AccessRessource {
     public Response grantPermission(@PathParam("roleId") UUID roleId, @PathParam("permissionId") UUID permissionId) {
         Log.info("Request received: PUT /roles/" + roleId + "/permissions/" + permissionId + " - Granting permission to role");
         try {
-            grantPermission.execute(new RoleId(roleId), new PermissionId(permissionId), securityContextCache.getCurrentContext());
+            grantPermission.execute(new RoleId(roleId), new PermissionId(permissionId), securityContextService.getCurrentContext());
             Log.info("Request successful: PUT /roles/" + roleId + "/permissions/" + permissionId + " - Permission granted successfully");
             return Response.ok().build();
         } catch (Exception e) {

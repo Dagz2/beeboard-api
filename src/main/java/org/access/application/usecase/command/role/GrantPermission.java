@@ -13,7 +13,7 @@ import org.access.domain.model.SecurityContext;
 import org.access.domain.repository.PermissionRepository;
 import org.access.domain.repository.RoleRepository;
 import org.access.domain.service.PrivilegeEscalationGuard;
-import org.access.exposition.security.SecurityContextCache;
+import org.access.application.service.SecurityContextService;
 
 /**
  * Use case for granting a permission to a role.
@@ -34,26 +34,26 @@ public class GrantPermission {
     private final PermissionRepository permissionRepository;
     private final PrivilegeEscalationGuard privilegeGuard;
     private final AuditService auditService;
-    private final SecurityContextCache securityContextCache;
+    private final SecurityContextService securityContextService;
 
     /**
      * Constructs the use case with the required dependencies.
      *
-     * @param roleRepository       the repository used to retrieve and persist roles
-     * @param permissionRepository the repository used to retrieve permissions
-     * @param privilegeGuard       the guard for privilege escalation protection
-     * @param auditService         the service for audit logging
-     * @param securityContextCache the cache for security context invalidation
+     * @param roleRepository         the repository used to retrieve and persist roles
+     * @param permissionRepository   the repository used to retrieve permissions
+     * @param privilegeGuard         the guard for privilege escalation protection
+     * @param auditService           the service for audit logging
+     * @param securityContextService the service for security context invalidation
      */
     @Inject
     public GrantPermission(RoleRepository roleRepository, PermissionRepository permissionRepository,
                            PrivilegeEscalationGuard privilegeGuard, AuditService auditService,
-                           SecurityContextCache securityContextCache) {
+                           SecurityContextService securityContextService) {
         this.roleRepository = roleRepository;
         this.permissionRepository = permissionRepository;
         this.privilegeGuard = privilegeGuard;
         this.auditService = auditService;
-        this.securityContextCache = securityContextCache;
+        this.securityContextService = securityContextService;
     }
 
     /**
@@ -95,7 +95,7 @@ public class GrantPermission {
             "{\"permissionId\": \"" + permissionId.id().toString() + "\"}"
         );
 
-        // Invalidate security context cache for all users with this role
-        securityContextCache.invalidateByRole(roleId);
+        // Invalidate security context for all users with this role
+        securityContextService.invalidateByRole(roleId);
     }
 }

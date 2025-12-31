@@ -1,4 +1,4 @@
-package org.access.exposition.security;
+package org.access.application.service;
 
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheResult;
@@ -25,17 +25,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Application-scoped cache for SecurityContext objects.
+ * Application service for managing SecurityContext objects.
  *
- * This cache stores security contexts with a 15-minute TTL to reduce database
- * queries for permission checks. The cache is invalidated proactively when
- * roles or permissions are modified.
- *
- * Replaces the previous SecurityContextProvider with a more efficient
- * caching strategy.
+ * This service loads and caches security contexts with a 15-minute TTL to reduce
+ * database queries for permission checks. The cache is invalidated proactively
+ * when roles or permissions are modified.
  */
 @ApplicationScoped
-public class SecurityContextCache {
+public class SecurityContextService {
 
     private final JsonWebToken jwt;
     private final UserRepository userRepository;
@@ -43,7 +40,7 @@ public class SecurityContextCache {
     private final PermissionRepository permissionRepository;
 
     @Inject
-    public SecurityContextCache(JsonWebToken jwt, UserRepository userRepository,
+    public SecurityContextService(JsonWebToken jwt, UserRepository userRepository,
                                  RoleRepository roleRepository, PermissionRepository permissionRepository) {
         this.jwt = jwt;
         this.userRepository = userRepository;

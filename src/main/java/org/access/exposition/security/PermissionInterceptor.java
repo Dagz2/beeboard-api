@@ -8,6 +8,7 @@ import jakarta.interceptor.InvocationContext;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.core.Response;
 
+import org.access.application.service.SecurityContextService;
 import org.access.domain.model.PermissionCode;
 import org.access.domain.model.SecurityContext;
 
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
  * This interceptor is triggered by the {@link RequiresPermission} annotation
  * and validates that the authenticated user has the required permissions.
  *
- * Uses {@link SecurityContextCache} for efficient permission loading with
+ * Uses {@link SecurityContextService} for efficient permission loading with
  * Caffeine caching (15-minute TTL).
  */
 @Interceptor
@@ -30,11 +31,11 @@ import java.util.stream.Collectors;
 @Priority(Interceptor.Priority.APPLICATION)
 public class PermissionInterceptor {
 
-    private final SecurityContextCache securityContextCache;
+    private final SecurityContextService securityContextService;
 
     @Inject
-    public PermissionInterceptor(SecurityContextCache securityContextCache) {
-        this.securityContextCache = securityContextCache;
+    public PermissionInterceptor(SecurityContextService securityContextService) {
+        this.securityContextService = securityContextService;
     }
 
     @AroundInvoke
@@ -45,8 +46,8 @@ public class PermissionInterceptor {
             return context.proceed();
         }
 
-        // Get security context from cache
-        SecurityContext ctx = securityContextCache.getCurrentContext();
+        // Get security context from service
+        SecurityContext ctx = securityContextService.getCurrentContext();
 
         // Extract permission codes as strings
         Set<String> userPermissions = ctx.permissions().stream()

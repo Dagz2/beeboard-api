@@ -8,7 +8,7 @@ import org.access.domain.model.PermissionId;
 import org.access.domain.model.Role;
 import org.access.domain.model.RoleId;
 import org.access.domain.repository.RoleRepository;
-import org.access.exposition.security.SecurityContextCache;
+import org.access.application.service.SecurityContextService;
 
 /**
  * Use case for revoking a permission from a role.
@@ -20,18 +20,18 @@ import org.access.exposition.security.SecurityContextCache;
 public class RevokePermissionFromRole {
 
     private final RoleRepository roleRepository;
-    private final SecurityContextCache securityContextCache;
+    private final SecurityContextService securityContextService;
 
     /**
      * Constructs the use case with the required dependencies.
      *
-     * @param roleRepository       the repository used to retrieve and persist roles
-     * @param securityContextCache the cache for security context invalidation
+     * @param roleRepository         the repository used to retrieve and persist roles
+     * @param securityContextService the service for security context invalidation
      */
     @Inject
-    public RevokePermissionFromRole(RoleRepository roleRepository, SecurityContextCache securityContextCache) {
+    public RevokePermissionFromRole(RoleRepository roleRepository, SecurityContextService securityContextService) {
         this.roleRepository = roleRepository;
-        this.securityContextCache = securityContextCache;
+        this.securityContextService = securityContextService;
     }
 
     /**
@@ -50,7 +50,7 @@ public class RevokePermissionFromRole {
 
         roleRepository.save(role);
 
-        // Invalidate security context cache for all users with this role
-        securityContextCache.invalidateByRole(roleId);
+        // Invalidate security context for all users with this role
+        securityContextService.invalidateByRole(roleId);
     }
 }

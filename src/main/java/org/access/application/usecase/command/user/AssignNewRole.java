@@ -14,7 +14,7 @@ import org.access.domain.model.UserId;
 import org.access.domain.repository.RoleRepository;
 import org.access.domain.repository.UserRepository;
 import org.access.domain.service.PrivilegeEscalationGuard;
-import org.access.exposition.security.SecurityContextCache;
+import org.access.application.service.SecurityContextService;
 
 /**
  * Use case for assigning a new role to a user.
@@ -36,26 +36,26 @@ public class AssignNewRole {
     private final RoleRepository roleRepository;
     private final PrivilegeEscalationGuard privilegeGuard;
     private final AuditService auditService;
-    private final SecurityContextCache securityContextCache;
+    private final SecurityContextService securityContextService;
 
     /**
      * Constructs the use case with the required dependencies.
      *
-     * @param userRepository       the repository for accessing and saving users
-     * @param roleRepository       the repository for accessing roles
-     * @param privilegeGuard       the guard for privilege escalation protection
-     * @param auditService         the service for audit logging
-     * @param securityContextCache the cache for security context invalidation
+     * @param userRepository         the repository for accessing and saving users
+     * @param roleRepository         the repository for accessing roles
+     * @param privilegeGuard         the guard for privilege escalation protection
+     * @param auditService           the service for audit logging
+     * @param securityContextService the service for security context invalidation
      */
     @Inject
     public AssignNewRole(UserRepository userRepository, RoleRepository roleRepository,
                          PrivilegeEscalationGuard privilegeGuard, AuditService auditService,
-                         SecurityContextCache securityContextCache) {
+                         SecurityContextService securityContextService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.privilegeGuard = privilegeGuard;
         this.auditService = auditService;
-        this.securityContextCache = securityContextCache;
+        this.securityContextService = securityContextService;
     }
 
     /**
@@ -100,7 +100,7 @@ public class AssignNewRole {
             "{\"roleId\": \"" + newRoleId.id().toString() + "\"}"
         );
 
-        // Invalidate security context cache for this user
-        securityContextCache.invalidate(command.userId());
+        // Invalidate security context for this user
+        securityContextService.invalidate(command.userId());
     }
 }

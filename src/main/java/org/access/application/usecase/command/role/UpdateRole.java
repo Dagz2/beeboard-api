@@ -13,7 +13,7 @@ import org.access.domain.model.RoleName;
 import org.access.domain.model.SecurityContext;
 import org.access.domain.repository.RoleRepository;
 import org.access.domain.service.PrivilegeEscalationGuard;
-import org.access.exposition.security.SecurityContextCache;
+import org.access.application.service.SecurityContextService;
 
 /**
  * Use case for updating a role's code and name.
@@ -32,23 +32,23 @@ public class UpdateRole {
     private final RoleRepository roleRepository;
     private final PrivilegeEscalationGuard privilegeGuard;
     private final AuditService auditService;
-    private final SecurityContextCache securityContextCache;
+    private final SecurityContextService securityContextService;
 
     /**
      * Constructs the use case with the required dependencies.
      *
-     * @param roleRepository       the repository for accessing and saving roles
-     * @param privilegeGuard       the guard for privilege escalation protection
-     * @param auditService         the service for audit logging
-     * @param securityContextCache the cache for security context invalidation
+     * @param roleRepository         the repository for accessing and saving roles
+     * @param privilegeGuard         the guard for privilege escalation protection
+     * @param auditService           the service for audit logging
+     * @param securityContextService the service for security context invalidation
      */
     @Inject
     public UpdateRole(RoleRepository roleRepository, PrivilegeEscalationGuard privilegeGuard,
-                      AuditService auditService, SecurityContextCache securityContextCache) {
+                      AuditService auditService, SecurityContextService securityContextService) {
         this.roleRepository = roleRepository;
         this.privilegeGuard = privilegeGuard;
         this.auditService = auditService;
-        this.securityContextCache = securityContextCache;
+        this.securityContextService = securityContextService;
     }
 
     /**
@@ -85,7 +85,7 @@ public class UpdateRole {
             "{\"code\": \"" + command.code() + "\", \"name\": \"" + command.name() + "\"}"
         );
 
-        // Invalidate security context cache for all users with this role
-        securityContextCache.invalidateByRole(new RoleId(command.roleId()));
+        // Invalidate security context for all users with this role
+        securityContextService.invalidateByRole(new RoleId(command.roleId()));
     }
 }

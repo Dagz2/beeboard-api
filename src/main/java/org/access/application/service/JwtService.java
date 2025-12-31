@@ -49,6 +49,7 @@ public class JwtService {
                 .issuedAt(now)
                 .expiresAt(expirationTime)
                 .claim("fullName", user.getFullName().firstName() + " " + user.getFullName().lastName())
+                .claim("roleName", role.name().value()) // Role name for display
                 .sign();
     }
 
@@ -74,6 +75,7 @@ public class JwtService {
                 .issuedAt(now)
                 .expiresAt(expirationTime)
                 .claim("fullName", user.getFullName().firstName() + " " + user.getFullName().lastName())
+                .claim("roleName", role.name().value()) // Role name for display
                 .sign();
     }
 }

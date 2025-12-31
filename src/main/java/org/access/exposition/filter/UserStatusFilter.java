@@ -9,14 +9,12 @@ import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
-import org.access.domain.model.User;
-import org.access.domain.model.UserId;
-import org.access.domain.repository.UserRepository;
+import org.access.application.service.UserStatusService;
+import org.access.application.service.UserStatusService.UserStatus;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.logging.Log;
 
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -36,7 +34,7 @@ public class UserStatusFilter implements ContainerRequestFilter {
     JsonWebToken jwt;
 
     @Inject
-    UserRepository userRepository;
+    UserStatusService userStatusService;
 
     @Override
     public void filter(ContainerRequestContext requestContext) {
@@ -47,23 +45,21 @@ public class UserStatusFilter implements ContainerRequestFilter {
 
         try {
             UUID userId = UUID.fromString(jwt.getSubject());
-            Optional<User> userOpt = userRepository.findById(new UserId(userId));
+            UserStatus status = userStatusService.checkStatus(userId);
 
-            if (userOpt.isEmpty()) {
+            if (!status.exists()) {
                 Log.warn("User not found for JWT subject: " + userId);
                 abortWithForbidden(requestContext, "User not found");
                 return;
             }
 
-            User user = userOpt.get();
-
-            if (user.isLocked()) {
+            if (status.locked()) {
                 Log.info("Access denied: User " + userId + " is locked");
                 abortWithForbidden(requestContext, "Account is locked. Please contact support.");
                 return;
             }
 
-            if (user.isContractExpired()) {
+            if (status.contractExpired()) {
                 Log.info("Access denied: User " + userId + " contract has expired");
                 abortWithForbidden(requestContext, "Account contract has expired. Please contact support.");
                 return;

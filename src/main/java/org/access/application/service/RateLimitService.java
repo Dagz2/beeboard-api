@@ -2,12 +2,16 @@ package org.access.application.service;
 
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.access.infrastructure.entity.RateLimitEntity;
+
+import org.access.domain.model.RateLimit;
+import org.access.domain.repository.RateLimitRepository;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 
 /**
  * Service responsible for rate limiting password reset requests.
@@ -18,11 +22,18 @@ import java.time.temporal.ChronoUnit;
 @ApplicationScoped
 public class RateLimitService {
 
+    private final RateLimitRepository rateLimitRepository;
+
     @ConfigProperty(name = "password.reset.rate.limit", defaultValue = "3")
     Integer rateLimit;
 
     @ConfigProperty(name = "password.reset.rate.window.hours", defaultValue = "1")
     Integer windowHours;
+
+    @Inject
+    public RateLimitService(RateLimitRepository rateLimitRepository) {
+        this.rateLimitRepository = rateLimitRepository;
+    }
 
     /**
      * Checks if the given email has exceeded the rate limit.
@@ -32,27 +43,23 @@ public class RateLimitService {
      */
     @Transactional
     public boolean isRateLimitExceeded(String email) {
-        RateLimitEntity entity = RateLimitEntity.findById(email);
+        Optional<RateLimit> rateLimitOpt = rateLimitRepository.findByEmail(email);
 
-        if (entity == null) {
+        if (rateLimitOpt.isEmpty()) {
             // No previous requests, not rate limited
             return false;
         }
 
-        Instant windowStart = entity.getWindowStart();
-        Instant now = Instant.now();
-        Instant windowEnd = windowStart.plus(windowHours, ChronoUnit.HOURS);
+        RateLimit entry = rateLimitOpt.get();
 
-        if (now.isAfter(windowEnd)) {
+        if (entry.isWindowExpired(windowHours)) {
             // Window has expired, reset the counter
-            entity.setRequestCount(0);
-            entity.setWindowStart(now);
-            entity.persist();
+            rateLimitRepository.save(entry.resetWindow());
             return false;
         }
 
         // Within the window, check if limit is exceeded
-        return entity.getRequestCount() >= rateLimit;
+        return entry.isLimitExceeded(rateLimit);
     }
 
     /**
@@ -64,32 +71,27 @@ public class RateLimitService {
      */
     @Transactional
     public void incrementRateLimit(String email) {
-        RateLimitEntity entity = RateLimitEntity.findById(email);
-        Instant now = Instant.now();
+        Optional<RateLimit> rateLimitOpt = rateLimitRepository.findByEmail(email);
 
-        if (entity == null) {
+        RateLimit entry;
+        if (rateLimitOpt.isEmpty()) {
             // First request for this email
-            entity = new RateLimitEntity();
-            entity.setEmail(email);
-            entity.setRequestCount(1);
-            entity.setWindowStart(now);
-            entity.persist();
+            entry = RateLimit.firstRequest(email);
         } else {
-            Instant windowEnd = entity.getWindowStart().plus(windowHours, ChronoUnit.HOURS);
-
-            if (now.isAfter(windowEnd)) {
+            RateLimit existing = rateLimitOpt.get();
+            if (existing.isWindowExpired(windowHours)) {
                 // Window has expired, start a new one
-                entity.setRequestCount(1);
-                entity.setWindowStart(now);
+                entry = existing.resetWindow();
             } else {
                 // Within the window, increment
-                entity.setRequestCount(entity.getRequestCount() + 1);
+                entry = existing.increment();
             }
-            entity.persist();
         }
 
+        rateLimitRepository.save(entry);
+
         Log.debug("Rate limit incremented for email: " + email +
-                  ", count: " + entity.getRequestCount());
+                  ", count: " + entry.requestCount());
     }
 
     /**
@@ -101,7 +103,7 @@ public class RateLimitService {
     @Transactional
     public void cleanupExpiredLimits() {
         Instant cutoff = Instant.now().minus(windowHours, ChronoUnit.HOURS);
-        long deletedCount = RateLimitEntity.delete("windowStart < ?1", cutoff);
+        long deletedCount = rateLimitRepository.deleteExpired(cutoff);
 
         if (deletedCount > 0) {
             Log.info("Cleaned up " + deletedCount + " expired rate limit entries");
