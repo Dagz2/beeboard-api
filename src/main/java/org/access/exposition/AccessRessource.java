@@ -139,11 +139,33 @@ public class AccessRessource {
     @Path("/me")
     @Operation(
         summary = "Get current user profile",
-        description = "Returns the authenticated user's profile with role and permissions"
+        description = "Returns the authenticated user's profile with role and permissions. **Required permission: None (authenticated user only)**"
     )
     @APIResponse(
         responseCode = "200",
-        description = "User profile retrieved successfully"
+        description = "User profile retrieved successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "User Profile Response",
+                value = """
+                {
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "email": "john.doe@example.com",
+                    "fullName": "John Doe",
+                    "role": {
+                        "code": "MANAGER",
+                        "name": "Project Manager"
+                    },
+                    "permissions": [
+                        "PERMISSION_VIEW",
+                        "ROLE_VIEW",
+                        "USER_VIEW_ALL"
+                    ]
+                }
+                """
+            )
+        )
     )
     @APIResponse(
         responseCode = "401",
@@ -196,7 +218,7 @@ public class AccessRessource {
     @RequiresPermission("USER_CREATE")
     @Operation(
         summary = "Create a new user",
-        description = "Creates a new user with personal information, role assignment, and contract details"
+        description = "Creates a new user with personal information, role assignment, and contract details. **Required permission: USER_CREATE**"
     )
     @APIResponse(
         responseCode = "201",
@@ -252,7 +274,7 @@ public class AccessRessource {
     @RequiresPermission("USER_LOCK")
     @Operation(
         summary = "Lock user account",
-        description = "Locks a user account to prevent system access"
+        description = "Locks a user account to prevent system access. **Required permission: USER_LOCK**"
     )
     @APIResponse(
         responseCode = "200",
@@ -304,7 +326,7 @@ public class AccessRessource {
     @RequiresPermission("USER_LOCK")
     @Operation(
         summary = "Unlock user account",
-        description = "Unlocks a previously locked user account to restore system access"
+        description = "Unlocks a previously locked user account to restore system access. **Required permission: USER_LOCK**"
     )
     @APIResponse(
         responseCode = "200",
@@ -356,7 +378,7 @@ public class AccessRessource {
     @RequiresPermission({"ASSIGN_CRITICAL_ROLES", "ASSIGN_STANDARD_ROLES", "ASSIGN_BASIC_ROLES"})
     @Operation(
         summary = "Assign new role to user",
-        description = "Updates the user's role assignment"
+        description = "Updates the user's role assignment. **Required permission: ASSIGN_CRITICAL_ROLES OR ASSIGN_STANDARD_ROLES OR ASSIGN_BASIC_ROLES**"
     )
     @APIResponse(
         responseCode = "200",
@@ -408,7 +430,7 @@ public class AccessRessource {
     @RequiresPermission("USER_UPDATE")
     @Operation(
         summary = "Change user's full name",
-        description = "Updates the user's first name and last name"
+        description = "Updates the user's first name and last name. **Required permission: USER_UPDATE**"
     )
     @APIResponse(
         responseCode = "200",
@@ -461,7 +483,7 @@ public class AccessRessource {
     @RequiresPermission("USER_UPDATE")
     @Operation(
         summary = "Change user's email",
-        description = "Updates the user's email address"
+        description = "Updates the user's email address. **Required permission: USER_UPDATE**"
     )
     @APIResponse(
         responseCode = "200",
@@ -515,7 +537,7 @@ public class AccessRessource {
     @RequiresPermission("USER_UPDATE")
     @Operation(
         summary = "Change user's password",
-        description = "Updates the user's password with a new secure password"
+        description = "Updates the user's password with a new secure password. **Required permission: USER_UPDATE**"
     )
     @APIResponse(
         responseCode = "200",
@@ -572,7 +594,7 @@ public class AccessRessource {
     @RequiresPermission("USER_UPDATE")
     @Operation(
         summary = "Extend user's contract",
-        description = "Updates the user's contract end date to a future date"
+        description = "Updates the user's contract end date to a future date. **Required permission: USER_UPDATE**"
     )
     @APIResponse(
         responseCode = "200",
@@ -629,7 +651,7 @@ public class AccessRessource {
     @RequiresPermission("USER_UPDATE")
     @Operation(
         summary = "Terminate user's contract",
-        description = "Immediately terminates the user's contract and locks their account"
+        description = "Immediately terminates the user's contract and locks their account. **Required permission: USER_UPDATE**"
     )
     @APIResponse(
         responseCode = "200",
@@ -684,7 +706,7 @@ public class AccessRessource {
     @RequiresPermission("USER_DELETE")
     @Operation(
         summary = "Delete user",
-        description = "Permanently deletes a user from the system. User must be locked before deletion."
+        description = "Permanently deletes a user from the system. User must be locked before deletion. **Required permission: USER_DELETE**"
     )
     @APIResponse(
         responseCode = "204",
@@ -741,11 +763,33 @@ public class AccessRessource {
     @RequiresPermission("USER_VIEW_ALL")
     @Operation(
         summary = "Get user by ID",
-        description = "Retrieves a specific user by their unique identifier"
+        description = "Retrieves a specific user by their unique identifier. **Required permission: USER_VIEW_ALL**"
     )
     @APIResponse(
         responseCode = "200",
-        description = "User found successfully"
+        description = "User found successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "User Response",
+                value = """
+                {
+                    "userId": "550e8400-e29b-41d4-a716-446655440000",
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "john.doe@example.com",
+                    "contractEndDate": "2026-12-31",
+                    "isLocked": false,
+                    "lastActivityDate": "2024-01-15T14:30:00Z",
+                    "auditInfo": {
+                        "createdAt": "2023-06-01T09:00:00Z",
+                        "updatedAt": "2024-01-15T14:30:00Z"
+                    },
+                    "roleId": "660e8400-e29b-41d4-a716-446655440001"
+                }
+                """
+            )
+        )
     )
     @APIResponse(
         responseCode = "404",
@@ -780,11 +824,49 @@ public class AccessRessource {
     @RequiresPermission("USER_VIEW_ALL")
     @Operation(
         summary = "Get all users",
-        description = "Returns a complete list of all registered users"
+        description = "Returns a complete list of all registered users. **Required permission: USER_VIEW_ALL**"
     )
     @APIResponse(
         responseCode = "200",
-        description = "Users retrieved successfully"
+        description = "Users retrieved successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Users List Response",
+                value = """
+                [
+                    {
+                        "userId": "550e8400-e29b-41d4-a716-446655440000",
+                        "firstName": "John",
+                        "lastName": "Doe",
+                        "email": "john.doe@example.com",
+                        "contractEndDate": "2026-12-31",
+                        "isLocked": false,
+                        "lastActivityDate": "2024-01-15T14:30:00Z",
+                        "auditInfo": {
+                            "createdAt": "2023-06-01T09:00:00Z",
+                            "updatedAt": "2024-01-15T14:30:00Z"
+                        },
+                        "roleId": "660e8400-e29b-41d4-a716-446655440001"
+                    },
+                    {
+                        "userId": "550e8400-e29b-41d4-a716-446655440001",
+                        "firstName": "Jane",
+                        "lastName": "Smith",
+                        "email": "jane.smith@example.com",
+                        "contractEndDate": "2025-06-30",
+                        "isLocked": false,
+                        "lastActivityDate": "2024-01-14T16:45:00Z",
+                        "auditInfo": {
+                            "createdAt": "2023-07-15T10:00:00Z",
+                            "updatedAt": "2024-01-14T16:45:00Z"
+                        },
+                        "roleId": "770e8400-e29b-41d4-a716-446655440002"
+                    }
+                ]
+                """
+            )
+        )
     )
     public Response getAllUsers() {
         Log.info("Request received: GET /users - Retrieving all users");
@@ -812,11 +894,35 @@ public class AccessRessource {
     @RequiresPermission("USER_VIEW_ALL")
     @Operation(
         summary = "Get users by role",
-        description = "Returns all users assigned to a specific role"
+        description = "Returns all users assigned to a specific role. **Required permission: USER_VIEW_ALL**"
     )
     @APIResponse(
         responseCode = "200",
-        description = "Users retrieved successfully"
+        description = "Users retrieved successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Users By Role Response",
+                value = """
+                [
+                    {
+                        "userId": "550e8400-e29b-41d4-a716-446655440000",
+                        "firstName": "John",
+                        "lastName": "Doe",
+                        "email": "john.doe@example.com",
+                        "contractEndDate": "2026-12-31",
+                        "isLocked": false,
+                        "lastActivityDate": "2024-01-15T14:30:00Z",
+                        "auditInfo": {
+                            "createdAt": "2023-06-01T09:00:00Z",
+                            "updatedAt": "2024-01-15T14:30:00Z"
+                        },
+                        "roleId": "660e8400-e29b-41d4-a716-446655440001"
+                    }
+                ]
+                """
+            )
+        )
     )
     public Response getUsersByRole(@PathParam("roleId") UUID roleId) {
         Log.info("Request received: GET /users/role/" + roleId + " - Retrieving users by role");
@@ -848,7 +954,7 @@ public class AccessRessource {
     @RequiresPermission("MANAGE_ROLES")
     @Operation(
         summary = "Create a new role",
-        description = "Creates a new role with a unique code and descriptive name"
+        description = "Creates a new role with a unique code and descriptive name. **Required permission: MANAGE_ROLES**"
     )
     @APIResponse(
         responseCode = "201",
@@ -901,7 +1007,7 @@ public class AccessRessource {
     @RequiresPermission("MANAGE_ROLES")
     @Operation(
         summary = "Update role",
-        description = "Updates an existing role's information"
+        description = "Updates an existing role's information. **Required permission: MANAGE_ROLES**"
     )
     @APIResponse(
         responseCode = "200",
@@ -956,7 +1062,7 @@ public class AccessRessource {
     @RequiresPermission("MANAGE_ROLES")
     @Operation(
         summary = "Delete role",
-        description = "Permanently deletes a role from the system"
+        description = "Permanently deletes a role from the system. **Required permission: MANAGE_ROLES**"
     )
     @APIResponse(
         responseCode = "204",
@@ -1008,7 +1114,7 @@ public class AccessRessource {
     @RequiresPermission("MANAGE_ROLES")
     @Operation(
         summary = "Grant permission to role",
-        description = "Associates a permission with a role, granting access to the specified action"
+        description = "Associates a permission with a role, granting access to the specified action. **Required permission: MANAGE_ROLES**"
     )
     @APIResponse(
         responseCode = "200",
@@ -1045,7 +1151,7 @@ public class AccessRessource {
     @RequiresPermission("MANAGE_ROLES")
     @Operation(
         summary = "Revoke permission from role",
-        description = "Removes a permission from a role, revoking access to the specified action"
+        description = "Removes a permission from a role, revoking access to the specified action. **Required permission: MANAGE_ROLES**"
     )
     @APIResponse(
         responseCode = "200",
@@ -1083,11 +1189,33 @@ public class AccessRessource {
     @RequiresPermission("ROLE_VIEW")
     @Operation(
         summary = "Get role by ID",
-        description = "Retrieves a specific role by its unique identifier"
+        description = "Retrieves a specific role by its unique identifier. **Required permission: ROLE_VIEW**"
     )
     @APIResponse(
         responseCode = "200",
-        description = "Role found successfully"
+        description = "Role found successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Role Response",
+                value = """
+                {
+                    "roleId": "660e8400-e29b-41d4-a716-446655440001",
+                    "code": "MANAGER",
+                    "name": "Project Manager",
+                    "auditInfo": {
+                        "createdAt": "2023-01-01T00:00:00Z",
+                        "updatedAt": "2024-01-10T12:00:00Z"
+                    },
+                    "permissions": [
+                        "880e8400-e29b-41d4-a716-446655440010",
+                        "880e8400-e29b-41d4-a716-446655440011",
+                        "880e8400-e29b-41d4-a716-446655440012"
+                    ]
+                }
+                """
+            )
+        )
     )
     @APIResponse(
         responseCode = "404",
@@ -1122,11 +1250,46 @@ public class AccessRessource {
     @RequiresPermission("ROLE_VIEW")
     @Operation(
         summary = "Get all roles",
-        description = "Returns a complete list of all defined roles"
+        description = "Returns a complete list of all defined roles. **Required permission: ROLE_VIEW**"
     )
     @APIResponse(
         responseCode = "200",
-        description = "Roles retrieved successfully"
+        description = "Roles retrieved successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Roles List Response",
+                value = """
+                [
+                    {
+                        "roleId": "660e8400-e29b-41d4-a716-446655440001",
+                        "code": "MANAGER",
+                        "name": "Project Manager",
+                        "auditInfo": {
+                            "createdAt": "2023-01-01T00:00:00Z",
+                            "updatedAt": "2024-01-10T12:00:00Z"
+                        },
+                        "permissions": [
+                            "880e8400-e29b-41d4-a716-446655440010",
+                            "880e8400-e29b-41d4-a716-446655440011"
+                        ]
+                    },
+                    {
+                        "roleId": "770e8400-e29b-41d4-a716-446655440002",
+                        "code": "ANALYST",
+                        "name": "Business Analyst",
+                        "auditInfo": {
+                            "createdAt": "2023-02-15T00:00:00Z",
+                            "updatedAt": "2024-01-05T08:00:00Z"
+                        },
+                        "permissions": [
+                            "880e8400-e29b-41d4-a716-446655440012"
+                        ]
+                    }
+                ]
+                """
+            )
+        )
     )
     public Response getAllRoles() {
         Log.info("Request received: GET /roles - Retrieving all roles");
@@ -1158,7 +1321,7 @@ public class AccessRessource {
     @RequiresPermission("MANAGE_PERMISSIONS")
     @Operation(
         summary = "Create a new permission",
-        description = "Creates a new permission that can be granted to roles"
+        description = "Creates a new permission that can be granted to roles. **Required permission: MANAGE_PERMISSIONS**"
     )
     @APIResponse(
         responseCode = "201",
@@ -1212,7 +1375,7 @@ public class AccessRessource {
     @RequiresPermission("MANAGE_PERMISSIONS")
     @Operation(
         summary = "Update permission",
-        description = "Updates an existing permission's information"
+        description = "Updates an existing permission's information. **Required permission: MANAGE_PERMISSIONS**"
     )
     @APIResponse(
         responseCode = "200",
@@ -1267,7 +1430,7 @@ public class AccessRessource {
     @RequiresPermission("MANAGE_PERMISSIONS")
     @Operation(
         summary = "Delete permission",
-        description = "Permanently deletes a permission from the system"
+        description = "Permanently deletes a permission from the system. **Required permission: MANAGE_PERMISSIONS**"
     )
     @APIResponse(
         responseCode = "204",
@@ -1320,11 +1483,25 @@ public class AccessRessource {
     @RequiresPermission("PERMISSION_VIEW")
     @Operation(
         summary = "Get permission by ID",
-        description = "Retrieves a specific permission by its unique identifier"
+        description = "Retrieves a specific permission by its unique identifier. **Required permission: PERMISSION_VIEW**"
     )
     @APIResponse(
         responseCode = "200",
-        description = "Permission found successfully"
+        description = "Permission found successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Permission Response",
+                value = """
+                {
+                    "id": "880e8400-e29b-41d4-a716-446655440010",
+                    "code": "USER_CREATE",
+                    "name": "Create User",
+                    "description": "Allows creating new users in the system"
+                }
+                """
+            )
+        )
     )
     @APIResponse(
         responseCode = "404",
@@ -1359,11 +1536,45 @@ public class AccessRessource {
     @RequiresPermission("PERMISSION_VIEW")
     @Operation(
         summary = "Get all permissions",
-        description = "Returns a complete list of all defined permissions"
+        description = "Returns a complete list of all defined permissions. **Required permission: PERMISSION_VIEW**"
     )
     @APIResponse(
         responseCode = "200",
-        description = "Permissions retrieved successfully"
+        description = "Permissions retrieved successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Permissions List Response",
+                value = """
+                [
+                    {
+                        "id": "880e8400-e29b-41d4-a716-446655440010",
+                        "code": "USER_CREATE",
+                        "name": "Create User",
+                        "description": "Allows creating new users in the system"
+                    },
+                    {
+                        "id": "880e8400-e29b-41d4-a716-446655440011",
+                        "code": "USER_UPDATE",
+                        "name": "Update User",
+                        "description": "Allows updating existing user information"
+                    },
+                    {
+                        "id": "880e8400-e29b-41d4-a716-446655440012",
+                        "code": "USER_DELETE",
+                        "name": "Delete User",
+                        "description": "Allows permanently deleting users from the system"
+                    },
+                    {
+                        "id": "880e8400-e29b-41d4-a716-446655440013",
+                        "code": "USER_VIEW_ALL",
+                        "name": "View All Users",
+                        "description": "Allows viewing all users in the system"
+                    }
+                ]
+                """
+            )
+        )
     )
     public Response getAllPermissions() {
         Log.info("Request received: GET /permissions - Retrieving all permissions");

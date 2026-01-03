@@ -3,9 +3,85 @@
   "tags" : [ {
     "name" : "Access Management",
     "description" : "Endpoints for managing users, roles, and permissions"
+  }, {
+    "name" : "Authentication",
+    "description" : "Endpoints for user authentication and token management"
   } ],
   "components" : {
     "schemas" : {
+      "AssignNewRoleCommand" : {
+        "type" : "object",
+        "required" : [ "userId", "roleId" ],
+        "properties" : {
+          "userId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "roleId" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }
+      },
+      "ChangeFullNameCommand" : {
+        "type" : "object",
+        "required" : [ "userId", "firstName", "lastName" ],
+        "properties" : {
+          "userId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "firstName" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          },
+          "lastName" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }
+      },
+      "ChangeMailCommand" : {
+        "type" : "object",
+        "required" : [ "userId", "email" ],
+        "properties" : {
+          "userId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "email" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }
+      },
+      "ChangePasswordCommand" : {
+        "type" : "object",
+        "required" : [ "userId", "newPassword" ],
+        "properties" : {
+          "userId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "newPassword" : {
+            "type" : "string",
+            "minLength" : 32,
+            "pattern" : "\\S"
+          }
+        }
+      },
+      "CompletePasswordResetCommand" : {
+        "type" : "object",
+        "required" : [ "token", "newPassword" ],
+        "properties" : {
+          "token" : {
+            "type" : "string",
+            "minLength" : 64,
+            "maxLength" : 64,
+            "pattern" : "^[a-f0-9]{64}$"
+          },
+          "newPassword" : {
+            "type" : "string",
+            "minLength" : 32,
+            "pattern" : "\\S"
+          }
+        }
+      },
       "CreatePermissionCommand" : {
         "type" : "object",
         "required" : [ "code", "name", "description" ],
@@ -54,6 +130,10 @@
             "type" : "string",
             "pattern" : "\\S"
           },
+          "password" : {
+            "type" : "string",
+            "minLength" : 32
+          },
           "roleId" : {
             "$ref" : "#/components/schemas/UUID"
           },
@@ -89,12 +169,57 @@
           }
         }
       },
+      "ExtendContractCommand" : {
+        "type" : "object",
+        "required" : [ "userId", "newEndDate" ],
+        "properties" : {
+          "userId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "newEndDate" : {
+            "$ref" : "#/components/schemas/LocalDate"
+          }
+        }
+      },
       "LocalDate" : {
         "type" : "string",
         "format" : "date",
         "examples" : [ "2022-03-10" ]
       },
       "LockUserCommand" : {
+        "type" : "object",
+        "required" : [ "userId" ],
+        "properties" : {
+          "userId" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }
+      },
+      "LoginCommand" : {
+        "type" : "object",
+        "required" : [ "email", "password" ],
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          },
+          "password" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }
+      },
+      "RequestPasswordResetCommand" : {
+        "type" : "object",
+        "required" : [ "email" ],
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }
+      },
+      "TerminateContractCommand" : {
         "type" : "object",
         "required" : [ "userId" ],
         "properties" : {
@@ -166,20 +291,88 @@
     }
   },
   "paths" : {
-    "/api/v1/access/permissions" : {
+    "/api/v1/access/me" : {
       "get" : {
-        "summary" : "Get all permissions",
-        "description" : "Returns a complete list of all defined permissions",
+        "summary" : "Get current user profile",
+        "description" : "Returns the authenticated user's profile with role and permissions. **Required permission: None (authenticated user only)**",
         "tags" : [ "Access Management" ],
         "responses" : {
           "200" : {
-            "description" : "Permissions retrieved successfully"
+            "description" : "User profile retrieved successfully",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "User Profile Response" : {
+                    "value" : {
+                      "id" : "550e8400-e29b-41d4-a716-446655440000",
+                      "email" : "john.doe@example.com",
+                      "fullName" : "John Doe",
+                      "role" : {
+                        "code" : "MANAGER",
+                        "name" : "Project Manager"
+                      },
+                      "permissions" : [ "PERMISSION_VIEW", "ROLE_VIEW", "USER_VIEW_ALL" ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not authenticated"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/access/permissions" : {
+      "get" : {
+        "summary" : "Get all permissions",
+        "description" : "Returns a complete list of all defined permissions. **Required permission: PERMISSION_VIEW**",
+        "tags" : [ "Access Management" ],
+        "responses" : {
+          "200" : {
+            "description" : "Permissions retrieved successfully",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "Permissions List Response" : {
+                    "value" : [ {
+                      "id" : "880e8400-e29b-41d4-a716-446655440010",
+                      "code" : "USER_CREATE",
+                      "name" : "Create User",
+                      "description" : "Allows creating new users in the system"
+                    }, {
+                      "id" : "880e8400-e29b-41d4-a716-446655440011",
+                      "code" : "USER_UPDATE",
+                      "name" : "Update User",
+                      "description" : "Allows updating existing user information"
+                    }, {
+                      "id" : "880e8400-e29b-41d4-a716-446655440012",
+                      "code" : "USER_DELETE",
+                      "name" : "Delete User",
+                      "description" : "Allows permanently deleting users from the system"
+                    }, {
+                      "id" : "880e8400-e29b-41d4-a716-446655440013",
+                      "code" : "USER_VIEW_ALL",
+                      "name" : "View All Users",
+                      "description" : "Allows viewing all users in the system"
+                    } ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       },
       "post" : {
         "summary" : "Create a new permission",
-        "description" : "Creates a new permission that can be granted to roles",
+        "description" : "Creates a new permission that can be granted to roles. **Required permission: MANAGE_PERMISSIONS**",
         "tags" : [ "Access Management" ],
         "requestBody" : {
           "description" : "Permission creation data",
@@ -208,13 +401,16 @@
           "400" : {
             "description" : "Invalid input data"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       }
     },
     "/api/v1/access/permissions/{permissionId}" : {
       "put" : {
         "summary" : "Update permission",
-        "description" : "Updates an existing permission's information",
+        "description" : "Updates an existing permission's information. **Required permission: MANAGE_PERMISSIONS**",
         "tags" : [ "Access Management" ],
         "parameters" : [ {
           "name" : "permissionId",
@@ -247,7 +443,12 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Permission updated successfully"
+            "description" : "Permission updated successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
           },
           "404" : {
             "description" : "Permission not found"
@@ -255,11 +456,14 @@
           "400" : {
             "description" : "Bad Request"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       },
       "get" : {
         "summary" : "Get permission by ID",
-        "description" : "Retrieves a specific permission by its unique identifier",
+        "description" : "Retrieves a specific permission by its unique identifier. **Required permission: PERMISSION_VIEW**",
         "tags" : [ "Access Management" ],
         "parameters" : [ {
           "name" : "permissionId",
@@ -271,16 +475,33 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Permission found successfully"
+            "description" : "Permission found successfully",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "Permission Response" : {
+                    "value" : {
+                      "id" : "880e8400-e29b-41d4-a716-446655440010",
+                      "code" : "USER_CREATE",
+                      "name" : "Create User",
+                      "description" : "Allows creating new users in the system"
+                    }
+                  }
+                }
+              }
+            }
           },
           "404" : {
             "description" : "Permission not found"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       },
       "delete" : {
         "summary" : "Delete permission",
-        "description" : "Permanently deletes a permission from the system",
+        "description" : "Permanently deletes a permission from the system. **Required permission: MANAGE_PERMISSIONS**",
         "tags" : [ "Access Management" ],
         "parameters" : [ {
           "name" : "permissionId",
@@ -291,8 +512,16 @@
           }
         } ],
         "requestBody" : {
+          "description" : "Permission deletion data",
           "content" : {
             "application/json" : {
+              "examples" : {
+                "Delete Permission Example" : {
+                  "value" : {
+                    "permissionId" : "550e8400-e29b-41d4-a716-446655440000"
+                  }
+                }
+              },
               "schema" : {
                 "$ref" : "#/components/schemas/DeletePermissionCommand"
               }
@@ -307,23 +536,56 @@
           "404" : {
             "description" : "Permission not found"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       }
     },
     "/api/v1/access/roles" : {
       "get" : {
         "summary" : "Get all roles",
-        "description" : "Returns a complete list of all defined roles",
+        "description" : "Returns a complete list of all defined roles. **Required permission: ROLE_VIEW**",
         "tags" : [ "Access Management" ],
         "responses" : {
           "200" : {
-            "description" : "Roles retrieved successfully"
+            "description" : "Roles retrieved successfully",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "Roles List Response" : {
+                    "value" : [ {
+                      "roleId" : "660e8400-e29b-41d4-a716-446655440001",
+                      "code" : "MANAGER",
+                      "name" : "Project Manager",
+                      "auditInfo" : {
+                        "createdAt" : "2023-01-01T00:00:00Z",
+                        "updatedAt" : "2024-01-10T12:00:00Z"
+                      },
+                      "permissions" : [ "880e8400-e29b-41d4-a716-446655440010", "880e8400-e29b-41d4-a716-446655440011" ]
+                    }, {
+                      "roleId" : "770e8400-e29b-41d4-a716-446655440002",
+                      "code" : "ANALYST",
+                      "name" : "Business Analyst",
+                      "auditInfo" : {
+                        "createdAt" : "2023-02-15T00:00:00Z",
+                        "updatedAt" : "2024-01-05T08:00:00Z"
+                      },
+                      "permissions" : [ "880e8400-e29b-41d4-a716-446655440012" ]
+                    } ]
+                  }
+                }
+              }
+            }
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       },
       "post" : {
         "summary" : "Create a new role",
-        "description" : "Creates a new role with a unique code and descriptive name",
+        "description" : "Creates a new role with a unique code and descriptive name. **Required permission: MANAGE_ROLES**",
         "tags" : [ "Access Management" ],
         "requestBody" : {
           "description" : "Role creation data",
@@ -351,13 +613,16 @@
           "400" : {
             "description" : "Invalid input data"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       }
     },
     "/api/v1/access/roles/{roleId}" : {
       "put" : {
         "summary" : "Update role",
-        "description" : "Updates an existing role's information",
+        "description" : "Updates an existing role's information. **Required permission: MANAGE_ROLES**",
         "tags" : [ "Access Management" ],
         "parameters" : [ {
           "name" : "roleId",
@@ -389,7 +654,12 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Role updated successfully"
+            "description" : "Role updated successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
           },
           "404" : {
             "description" : "Role not found"
@@ -397,11 +667,14 @@
           "400" : {
             "description" : "Bad Request"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       },
       "get" : {
         "summary" : "Get role by ID",
-        "description" : "Retrieves a specific role by its unique identifier",
+        "description" : "Retrieves a specific role by its unique identifier. **Required permission: ROLE_VIEW**",
         "tags" : [ "Access Management" ],
         "parameters" : [ {
           "name" : "roleId",
@@ -413,16 +686,37 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Role found successfully"
+            "description" : "Role found successfully",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "Role Response" : {
+                    "value" : {
+                      "roleId" : "660e8400-e29b-41d4-a716-446655440001",
+                      "code" : "MANAGER",
+                      "name" : "Project Manager",
+                      "auditInfo" : {
+                        "createdAt" : "2023-01-01T00:00:00Z",
+                        "updatedAt" : "2024-01-10T12:00:00Z"
+                      },
+                      "permissions" : [ "880e8400-e29b-41d4-a716-446655440010", "880e8400-e29b-41d4-a716-446655440011", "880e8400-e29b-41d4-a716-446655440012" ]
+                    }
+                  }
+                }
+              }
+            }
           },
           "404" : {
             "description" : "Role not found"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       },
       "delete" : {
         "summary" : "Delete role",
-        "description" : "Permanently deletes a role from the system",
+        "description" : "Permanently deletes a role from the system. **Required permission: MANAGE_ROLES**",
         "tags" : [ "Access Management" ],
         "parameters" : [ {
           "name" : "roleId",
@@ -433,8 +727,16 @@
           }
         } ],
         "requestBody" : {
+          "description" : "Role deletion data",
           "content" : {
             "application/json" : {
+              "examples" : {
+                "Delete Role Example" : {
+                  "value" : {
+                    "roleId" : "550e8400-e29b-41d4-a716-446655440000"
+                  }
+                }
+              },
               "schema" : {
                 "$ref" : "#/components/schemas/DeleteRoleCommand"
               }
@@ -449,23 +751,138 @@
           "404" : {
             "description" : "Role not found"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/access/roles/{roleId}/permissions/{permissionId}" : {
+      "delete" : {
+        "summary" : "Revoke permission from role",
+        "description" : "Removes a permission from a role, revoking access to the specified action. **Required permission: MANAGE_ROLES**",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "permissionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }, {
+          "name" : "roleId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Permission revoked successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Role or permission not found"
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
+      },
+      "put" : {
+        "summary" : "Grant permission to role",
+        "description" : "Associates a permission with a role, granting access to the specified action. **Required permission: MANAGE_ROLES**",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "permissionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }, {
+          "name" : "roleId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Permission granted successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Role or permission not found"
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       }
     },
     "/api/v1/access/users" : {
       "get" : {
         "summary" : "Get all users",
-        "description" : "Returns a complete list of all registered users",
+        "description" : "Returns a complete list of all registered users. **Required permission: USER_VIEW_ALL**",
         "tags" : [ "Access Management" ],
         "responses" : {
           "200" : {
-            "description" : "Users retrieved successfully"
+            "description" : "Users retrieved successfully",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "Users List Response" : {
+                    "value" : [ {
+                      "userId" : "550e8400-e29b-41d4-a716-446655440000",
+                      "firstName" : "John",
+                      "lastName" : "Doe",
+                      "email" : "john.doe@example.com",
+                      "contractEndDate" : "2026-12-31",
+                      "isLocked" : false,
+                      "lastActivityDate" : "2024-01-15T14:30:00Z",
+                      "auditInfo" : {
+                        "createdAt" : "2023-06-01T09:00:00Z",
+                        "updatedAt" : "2024-01-15T14:30:00Z"
+                      },
+                      "roleId" : "660e8400-e29b-41d4-a716-446655440001"
+                    }, {
+                      "userId" : "550e8400-e29b-41d4-a716-446655440001",
+                      "firstName" : "Jane",
+                      "lastName" : "Smith",
+                      "email" : "jane.smith@example.com",
+                      "contractEndDate" : "2025-06-30",
+                      "isLocked" : false,
+                      "lastActivityDate" : "2024-01-14T16:45:00Z",
+                      "auditInfo" : {
+                        "createdAt" : "2023-07-15T10:00:00Z",
+                        "updatedAt" : "2024-01-14T16:45:00Z"
+                      },
+                      "roleId" : "770e8400-e29b-41d4-a716-446655440002"
+                    } ]
+                  }
+                }
+              }
+            }
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       },
       "post" : {
         "summary" : "Create a new user",
-        "description" : "Creates a new user with personal information, role assignment, and contract details",
+        "description" : "Creates a new user with personal information, role assignment, and contract details. **Required permission: USER_CREATE**",
         "tags" : [ "Access Management" ],
         "requestBody" : {
           "description" : "User creation data",
@@ -496,13 +913,16 @@
           "400" : {
             "description" : "Invalid input data"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       }
     },
     "/api/v1/access/users/role/{roleId}" : {
       "get" : {
         "summary" : "Get users by role",
-        "description" : "Returns all users assigned to a specific role",
+        "description" : "Returns all users assigned to a specific role. **Required permission: USER_VIEW_ALL**",
         "tags" : [ "Access Management" ],
         "parameters" : [ {
           "name" : "roleId",
@@ -514,15 +934,40 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Users retrieved successfully"
+            "description" : "Users retrieved successfully",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "Users By Role Response" : {
+                    "value" : [ {
+                      "userId" : "550e8400-e29b-41d4-a716-446655440000",
+                      "firstName" : "John",
+                      "lastName" : "Doe",
+                      "email" : "john.doe@example.com",
+                      "contractEndDate" : "2026-12-31",
+                      "isLocked" : false,
+                      "lastActivityDate" : "2024-01-15T14:30:00Z",
+                      "auditInfo" : {
+                        "createdAt" : "2023-06-01T09:00:00Z",
+                        "updatedAt" : "2024-01-15T14:30:00Z"
+                      },
+                      "roleId" : "660e8400-e29b-41d4-a716-446655440001"
+                    } ]
+                  }
+                }
+              }
+            }
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       }
     },
     "/api/v1/access/users/{userId}" : {
       "get" : {
         "summary" : "Get user by ID",
-        "description" : "Retrieves a specific user by their unique identifier",
+        "description" : "Retrieves a specific user by their unique identifier. **Required permission: USER_VIEW_ALL**",
         "tags" : [ "Access Management" ],
         "parameters" : [ {
           "name" : "userId",
@@ -534,16 +979,41 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "User found successfully"
+            "description" : "User found successfully",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "User Response" : {
+                    "value" : {
+                      "userId" : "550e8400-e29b-41d4-a716-446655440000",
+                      "firstName" : "John",
+                      "lastName" : "Doe",
+                      "email" : "john.doe@example.com",
+                      "contractEndDate" : "2026-12-31",
+                      "isLocked" : false,
+                      "lastActivityDate" : "2024-01-15T14:30:00Z",
+                      "auditInfo" : {
+                        "createdAt" : "2023-06-01T09:00:00Z",
+                        "updatedAt" : "2024-01-15T14:30:00Z"
+                      },
+                      "roleId" : "660e8400-e29b-41d4-a716-446655440001"
+                    }
+                  }
+                }
+              }
+            }
           },
           "404" : {
             "description" : "User not found"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       },
       "delete" : {
         "summary" : "Delete user",
-        "description" : "Permanently deletes a user from the system. User must be locked before deletion.",
+        "description" : "Permanently deletes a user from the system. User must be locked before deletion. **Required permission: USER_DELETE**",
         "tags" : [ "Access Management" ],
         "parameters" : [ {
           "name" : "userId",
@@ -554,8 +1024,16 @@
           }
         } ],
         "requestBody" : {
+          "description" : "User deletion data",
           "content" : {
             "application/json" : {
+              "examples" : {
+                "Delete User Example" : {
+                  "value" : {
+                    "userId" : "550e8400-e29b-41d4-a716-446655440000"
+                  }
+                }
+              },
               "schema" : {
                 "$ref" : "#/components/schemas/DeleteUserCommand"
               }
@@ -573,13 +1051,16 @@
           "400" : {
             "description" : "User must be locked before deletion"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       }
     },
-    "/api/v1/access/users/{userId}/lock" : {
+    "/api/v1/access/users/{userId}/contract" : {
       "put" : {
-        "summary" : "Lock user account",
-        "description" : "Locks a user account to prevent system access",
+        "summary" : "Extend user's contract",
+        "description" : "Updates the user's contract end date to a future date. **Required permission: USER_UPDATE**",
         "tags" : [ "Access Management" ],
         "parameters" : [ {
           "name" : "userId",
@@ -590,8 +1071,174 @@
           }
         } ],
         "requestBody" : {
+          "description" : "Contract extension data",
           "content" : {
             "application/json" : {
+              "examples" : {
+                "Extend Contract Example" : {
+                  "value" : {
+                    "userId" : "550e8400-e29b-41d4-a716-446655440000",
+                    "newEndDate" : "2026-12-31"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/ExtendContractCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Contract extended successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found"
+          },
+          "400" : {
+            "description" : "New end date must be after the current one"
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/access/users/{userId}/contract/terminate" : {
+      "put" : {
+        "summary" : "Terminate user's contract",
+        "description" : "Immediately terminates the user's contract and locks their account. **Required permission: USER_UPDATE**",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "Contract termination data",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Terminate Contract Example" : {
+                  "value" : {
+                    "userId" : "550e8400-e29b-41d4-a716-446655440000"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/TerminateContractCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Contract terminated successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/access/users/{userId}/email" : {
+      "put" : {
+        "summary" : "Change user's email",
+        "description" : "Updates the user's email address. **Required permission: USER_UPDATE**",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "Email change data",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Change Email Example" : {
+                  "value" : {
+                    "userId" : "550e8400-e29b-41d4-a716-446655440000",
+                    "email" : "jane.smith@newcompany.com"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeMailCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Email changed successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/access/users/{userId}/lock" : {
+      "put" : {
+        "summary" : "Lock user account",
+        "description" : "Locks a user account to prevent system access. **Required permission: USER_LOCK**",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "User lock data",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Lock User Example" : {
+                  "value" : {
+                    "userId" : "550e8400-e29b-41d4-a716-446655440000"
+                  }
+                }
+              },
               "schema" : {
                 "$ref" : "#/components/schemas/LockUserCommand"
               }
@@ -601,7 +1248,12 @@
         },
         "responses" : {
           "200" : {
-            "description" : "User locked successfully"
+            "description" : "User locked successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
           },
           "404" : {
             "description" : "User not found"
@@ -609,13 +1261,16 @@
           "400" : {
             "description" : "Bad Request"
           }
-        }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
       }
     },
-    "/api/v1/access/users/{userId}/unlock" : {
+    "/api/v1/access/users/{userId}/name" : {
       "put" : {
-        "summary" : "Unlock user account",
-        "description" : "Unlocks a previously locked user account to restore system access",
+        "summary" : "Change user's full name",
+        "description" : "Updates the user's first name and last name. **Required permission: USER_UPDATE**",
         "tags" : [ "Access Management" ],
         "parameters" : [ {
           "name" : "userId",
@@ -626,8 +1281,176 @@
           }
         } ],
         "requestBody" : {
+          "description" : "Name change data",
           "content" : {
             "application/json" : {
+              "examples" : {
+                "Change Full Name Example" : {
+                  "value" : {
+                    "userId" : "550e8400-e29b-41d4-a716-446655440000",
+                    "firstName" : "Jane",
+                    "lastName" : "Smith"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeFullNameCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Name changed successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/access/users/{userId}/password" : {
+      "put" : {
+        "summary" : "Change user's password",
+        "description" : "Updates the user's password with a new secure password. **Required permission: USER_UPDATE**",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "Password change data",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Change Password Example" : {
+                  "value" : {
+                    "userId" : "550e8400-e29b-41d4-a716-446655440000",
+                    "newPassword" : "MySecurePassword123!@#$%2024NewPass"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangePasswordCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Password changed successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found"
+          },
+          "400" : {
+            "description" : "Invalid password format or validation failed"
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/access/users/{userId}/role" : {
+      "put" : {
+        "summary" : "Assign new role to user",
+        "description" : "Updates the user's role assignment. **Required permission: ASSIGN_CRITICAL_ROLES OR ASSIGN_STANDARD_ROLES OR ASSIGN_BASIC_ROLES**",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "Role assignment data",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Assign Role Example" : {
+                  "value" : {
+                    "userId" : "550e8400-e29b-41d4-a716-446655440000",
+                    "roleId" : "660e8400-e29b-41d4-a716-446655440001"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/AssignNewRoleCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Role assigned successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/access/users/{userId}/unlock" : {
+      "put" : {
+        "summary" : "Unlock user account",
+        "description" : "Unlocks a previously locked user account to restore system access. **Required permission: USER_LOCK**",
+        "tags" : [ "Access Management" ],
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "User unlock data",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Unlock User Example" : {
+                  "value" : {
+                    "userId" : "550e8400-e29b-41d4-a716-446655440000"
+                  }
+                }
+              },
               "schema" : {
                 "$ref" : "#/components/schemas/UnlockUserCommand"
               }
@@ -637,13 +1460,151 @@
         },
         "responses" : {
           "200" : {
-            "description" : "User unlocked successfully"
+            "description" : "User unlocked successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
           },
           "404" : {
             "description" : "User not found"
           },
           "400" : {
             "description" : "Bad Request"
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/auth/login" : {
+      "post" : {
+        "summary" : "Authenticate user",
+        "description" : "Authenticates a user with email and password, returning a JWT token on success",
+        "tags" : [ "Authentication" ],
+        "requestBody" : {
+          "description" : "User login credentials",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Login Request" : {
+                  "value" : {
+                    "email" : "john.doe@example.com",
+                    "password" : "SecurePassword123"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Authentication successful",
+            "content" : {
+              "application/json" : {
+                "examples" : {
+                  "Successful Authentication" : {
+                    "value" : {
+                      "token" : "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      "tokenType" : "Bearer",
+                      "expiresIn" : 3600
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Authentication failed - invalid credentials, locked account, or expired contract"
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password-reset/complete" : {
+      "post" : {
+        "summary" : "Complete password reset",
+        "description" : "Resets the user's password using the token from the reset email",
+        "tags" : [ "Authentication" ],
+        "requestBody" : {
+          "description" : "Password reset completion",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Complete Password Reset" : {
+                  "value" : {
+                    "token" : "a1b2c3d4e5f6789012345678901234567890123456789012345678901234",
+                    "newPassword" : "MyNewSecurePassword123!@#$2024Pass"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/CompletePasswordResetCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Password reset successful",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid token, expired token, or password validation failed"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password-reset/request" : {
+      "post" : {
+        "summary" : "Request password reset",
+        "description" : "Sends a password reset email with a time-limited token (15 minutes validity). Always returns success to prevent email enumeration.",
+        "tags" : [ "Authentication" ],
+        "requestBody" : {
+          "description" : "Password reset request",
+          "content" : {
+            "application/json" : {
+              "examples" : {
+                "Request Password Reset" : {
+                  "value" : {
+                    "email" : "john.doe@example.com"
+                  }
+                }
+              },
+              "schema" : {
+                "$ref" : "#/components/schemas/RequestPasswordResetCommand"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Request processed successfully (always returns success for security)",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid input data (validation failure)"
+          },
+          "429" : {
+            "description" : "Too many requests - rate limit exceeded (max 3 requests per hour)"
           }
         }
       }
