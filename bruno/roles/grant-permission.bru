@@ -1,0 +1,28 @@
+meta {
+  name: Grant Permission to Role
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/roles/{{createdRoleId}}/permissions/{{tier2PermissionId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+}
+
+docs {
+  # Grant Permission
+
+  DIRECTOR (TIER_1) can grant TIER_2 permissions to roles.
+  DIRECTOR cannot grant TIER_0 or TIER_1 permissions.
+}

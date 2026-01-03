@@ -1,0 +1,36 @@
+meta {
+  name: Modify System Permission (Forbidden for TIER_1)
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/permissions/{{systemPermissionId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+body:json {
+  {
+    "code": "MODIFIED_SYSTEM_PERM",
+    "name": "Modified System Permission",
+    "description": "Attempting to modify system permission"
+  }
+}
+
+tests {
+  test("should return 403 Forbidden - Only TIER_0 can modify system permissions", function() {
+    expect(res.status).to.equal(403);
+  });
+}
+
+docs {
+  # RBAC Test: System Permission Protection
+
+  System permissions can only be modified by TIER_0 (SUPER_ADMIN).
+  DIRECTOR (TIER_1) cannot modify system permissions.
+}

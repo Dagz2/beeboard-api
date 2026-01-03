@@ -1,0 +1,30 @@
+meta {
+  name: Tier Hierarchy Enforcement
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/roles/{{createdRoleId}}/permissions/{{tier0PermissionId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+tests {
+  test("should return 403 Forbidden - Cannot grant higher tier permission", function() {
+    expect(res.status).to.equal(403);
+  });
+}
+
+docs {
+  # RBAC Test: Tier Hierarchy Enforcement
+
+  DIRECTOR (TIER_1) cannot grant TIER_0 permissions.
+  An actor can only grant permissions of a tier strictly lower in privilege.
+
+  This prevents privilege escalation through permission grants.
+}

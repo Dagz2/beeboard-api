@@ -1,0 +1,35 @@
+meta {
+  name: Login Super Admin
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "super.admin@beeboard.com",
+    "password": "SuperAdmin123!@#$%^&*()_+abcd"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setEnvVar("superAdminToken", res.body.token);
+  }
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return a JWT token", function() {
+    expect(res.body.token).to.be.a('string');
+    expect(res.body.token.split('.').length).to.equal(3);
+  });
+}

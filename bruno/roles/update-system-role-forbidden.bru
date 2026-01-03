@@ -1,0 +1,35 @@
+meta {
+  name: Update System Role (Forbidden for TIER_1)
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/roles/{{superAdminRoleId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+body:json {
+  {
+    "code": "MODIFIED_SUPER_ADMIN",
+    "name": "Modified Super Admin"
+  }
+}
+
+tests {
+  test("should return 403 Forbidden - Only TIER_0 can modify system roles", function() {
+    expect(res.status).to.equal(403);
+  });
+}
+
+docs {
+  # RBAC Test: System Role Protection
+
+  System roles (SUPER_ADMIN, DIRECTOR, HR_MANAGER) can only be modified by TIER_0.
+  DIRECTOR (TIER_1) cannot modify system roles.
+}

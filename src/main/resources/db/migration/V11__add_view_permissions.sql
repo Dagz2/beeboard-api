@@ -1,10 +1,10 @@
 -- Add view permissions for roles and permissions management
 -- These allow read-only access to system configuration
 
-INSERT INTO permission (permission_id, code, name, description, security_tier, is_system, created_at, updated_at)
+INSERT INTO permission (permission_id, code, name, description, tier, is_system)
 VALUES
-    (gen_random_uuid(), 'ROLE_VIEW', 'View Roles', 'Allows viewing of role definitions', 'TIER_2', false, NOW(), NOW()),
-    (gen_random_uuid(), 'PERMISSION_VIEW', 'View Permissions', 'Allows viewing of permission definitions', 'TIER_1', false, NOW(), NOW());
+    (gen_random_uuid(), 'ROLE_VIEW', 'View Roles', 'Allows viewing of role definitions', 'TIER_2', false),
+    (gen_random_uuid(), 'PERMISSION_VIEW', 'View Permissions', 'Allows viewing of permission definitions', 'TIER_1', false);
 
 -- Grant ROLE_VIEW to DIRECTOR and SUPER_ADMIN
 INSERT INTO role_permission (role_id, permission_id)

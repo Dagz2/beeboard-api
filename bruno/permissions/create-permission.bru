@@ -1,0 +1,35 @@
+meta {
+  name: Create Permission
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/permissions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{superAdminToken}}
+}
+
+body:json {
+  {
+    "code": "TEST_PERMISSION_{{$timestamp}}",
+    "name": "Test Permission",
+    "description": "A test permission for E2E testing"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("createdPermissionId", res.body.permissionId);
+  }
+}
+
+tests {
+  test("should return 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+}

@@ -1,0 +1,34 @@
+meta {
+  name: Update User Role (Self Modification Forbidden)
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/users/{{directorUserId}}/role
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+body:json {
+  {
+    "roleId": "{{superAdminRoleId}}"
+  }
+}
+
+tests {
+  test("should return 403 Forbidden - Cannot modify own role", function() {
+    expect(res.status).to.equal(403);
+  });
+}
+
+docs {
+  # RBAC Test: Self-Modification Prevention
+
+  Users cannot modify their own role assignment.
+  This is a critical security rule enforced by PrivilegeEscalationGuard.
+}

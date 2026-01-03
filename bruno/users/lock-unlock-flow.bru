@@ -1,0 +1,28 @@
+meta {
+  name: Lock and Unlock User Flow
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/users/{{testUserId}}/lock
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+}
+
+docs {
+  # Lock User Flow
+
+  This request locks a user account.
+  Locked users cannot authenticate even with valid credentials.
+}

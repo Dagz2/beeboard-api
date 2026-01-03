@@ -1,0 +1,25 @@
+meta {
+  name: List Users
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/users
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return array of users", function() {
+    expect(res.body).to.be.an('array');
+  });
+}

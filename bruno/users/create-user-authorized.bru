@@ -1,0 +1,42 @@
+meta {
+  name: Create User (Authorized)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/users
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+body:json {
+  {
+    "firstName": "Test",
+    "lastName": "User",
+    "email": "test.user.{{$timestamp}}@beeboard.com",
+    "password": "TestUser123!@#$%^&*()_+abcdef",
+    "roleId": "{{hrManagerRoleId}}",
+    "contractEndDate": "2026-12-31"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("createdUserId", res.body.userId);
+  }
+}
+
+tests {
+  test("should return 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+
+  test("should return userId", function() {
+    expect(res.body.userId).to.be.a('string');
+  });
+}

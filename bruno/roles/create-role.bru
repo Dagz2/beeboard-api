@@ -1,0 +1,38 @@
+meta {
+  name: Create Role
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/roles
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+body:json {
+  {
+    "code": "TEST_ROLE_{{$timestamp}}",
+    "name": "Test Role"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("createdRoleId", res.body.roleId);
+  }
+}
+
+tests {
+  test("should return 201 Created", function() {
+    expect(res.status).to.equal(201);
+  });
+
+  test("should return roleId", function() {
+    expect(res.body.roleId).to.be.a('string');
+  });
+}

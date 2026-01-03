@@ -1,0 +1,28 @@
+meta {
+  name: Delete System Role (Forbidden)
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/roles/{{directorRoleId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{superAdminToken}}
+}
+
+tests {
+  test("should return 403 Forbidden - System roles cannot be deleted", function() {
+    expect(res.status).to.equal(403);
+  });
+}
+
+docs {
+  # RBAC Test: System Role Deletion Protection
+
+  System roles cannot be deleted by anyone, not even SUPER_ADMIN.
+  This protects critical system infrastructure.
+}

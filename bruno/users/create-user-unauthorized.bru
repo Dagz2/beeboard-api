@@ -1,0 +1,39 @@
+meta {
+  name: Create User (Unauthorized - HR Manager)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/users
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{hrManagerToken}}
+}
+
+body:json {
+  {
+    "firstName": "Unauthorized",
+    "lastName": "User",
+    "email": "unauthorized@beeboard.com",
+    "password": "TestUser123!@#$%^&*()_+abcdef",
+    "roleId": "{{someRoleId}}",
+    "contractEndDate": "2026-12-31"
+  }
+}
+
+tests {
+  test("should return 403 Forbidden - HR Manager cannot create users", function() {
+    expect(res.status).to.equal(403);
+  });
+}
+
+docs {
+  # RBAC Test: Permission Check
+
+  HR Manager (TIER_2) should NOT be able to create users.
+  Only DIRECTOR (TIER_1) and SUPER_ADMIN (TIER_0) can create users.
+}

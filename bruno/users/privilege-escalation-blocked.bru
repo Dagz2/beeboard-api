@@ -1,0 +1,39 @@
+meta {
+  name: Privilege Escalation Blocked
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/users/{{tier2UserId}}/role
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+body:json {
+  {
+    "roleId": "{{superAdminRoleId}}"
+  }
+}
+
+tests {
+  test("should return 403 Forbidden - Cannot assign higher tier role", function() {
+    expect(res.status).to.equal(403);
+  });
+}
+
+docs {
+  # RBAC Test: Privilege Escalation Prevention
+
+  DIRECTOR (TIER_1) cannot assign SUPER_ADMIN (TIER_0) role.
+  An actor can only assign roles of a tier strictly lower in privilege.
+
+  Tier Hierarchy:
+  - TIER_0 (Critical) - SUPER_ADMIN only
+  - TIER_1 (Sensitive) - DIRECTOR
+  - TIER_2 (Standard) - HR_MANAGER and others
+}

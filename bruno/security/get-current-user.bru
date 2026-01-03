@@ -1,0 +1,41 @@
+meta {
+  name: Get Current User (/me)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return user profile with permissions", function() {
+    expect(res.body.email).to.be.a('string');
+    expect(res.body.permissions).to.be.an('array');
+  });
+
+  test("should include role information", function() {
+    expect(res.body.roleCode).to.be.a('string');
+  });
+}
+
+docs {
+  # Get Current User Endpoint
+
+  Returns the authenticated user's profile including:
+  - User details (name, email)
+  - Role information
+  - List of permissions
+
+  This endpoint is cached for 15 minutes via SecurityContextService.
+}

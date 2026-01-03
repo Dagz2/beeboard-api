@@ -1,0 +1,39 @@
+meta {
+  name: Tier Escalation Attempts
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/users/{{tier2UserId}}/role
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{hrManagerToken}}
+}
+
+body:json {
+  {
+    "roleId": "{{directorRoleId}}"
+  }
+}
+
+tests {
+  test("should return 403 Forbidden - TIER_2 cannot manage any roles", function() {
+    expect(res.status).to.equal(403);
+  });
+}
+
+docs {
+  # Security Test: Tier Escalation Prevention
+
+  TIER_2 (HR_MANAGER) cannot assign any roles because they can only
+  manage tiers strictly lower than their own (but there is no TIER_3).
+
+  Hierarchy: TIER_0 > TIER_1 > TIER_2
+  - TIER_0 can manage TIER_1 and TIER_2
+  - TIER_1 can manage TIER_2 only
+  - TIER_2 cannot manage any tier
+}

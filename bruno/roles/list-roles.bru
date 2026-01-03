@@ -1,0 +1,30 @@
+meta {
+  name: List Roles
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/roles
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return array of roles", function() {
+    expect(res.body).to.be.an('array');
+  });
+
+  test("should include system roles", function() {
+    const roleCodes = res.body.map(r => r.code);
+    expect(roleCodes).to.include.members(['SUPER_ADMIN', 'DIRECTOR', 'HR_MANAGER']);
+  });
+}

@@ -1,0 +1,24 @@
+meta {
+  name: Login Locked Account
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "locked.user@beeboard.com",
+    "password": "LockedUser123!@#$%^&*()_+abcd"
+  }
+}
+
+tests {
+  test("should return 403 Forbidden for locked account", function() {
+    expect(res.status).to.be.oneOf([401, 403]);
+  });
+}

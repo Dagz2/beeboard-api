@@ -1,0 +1,28 @@
+meta {
+  name: Delete User (Must Be Locked First)
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/users/{{activeUserId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{directorToken}}
+}
+
+tests {
+  test("should return 400 or 403 - User must be locked before deletion", function() {
+    expect(res.status).to.be.oneOf([400, 403]);
+  });
+}
+
+docs {
+  # Delete User Validation
+
+  Users must be locked before they can be deleted.
+  This is a safety measure to prevent accidental deletions.
+}

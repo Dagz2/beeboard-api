@@ -1,0 +1,27 @@
+meta {
+  name: Expired Token
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxNjAwMDAwMDAwfQ.invalid
+}
+
+tests {
+  test("should return 401 Unauthorized for expired token", function() {
+    expect(res.status).to.equal(401);
+  });
+}
+
+docs {
+  # Security Test: Expired Token
+
+  API should reject requests with expired JWT tokens.
+}

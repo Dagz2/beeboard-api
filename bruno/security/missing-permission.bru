@@ -1,0 +1,41 @@
+meta {
+  name: Missing Permission
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/access/users
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{hrManagerToken}}
+}
+
+body:json {
+  {
+    "firstName": "Test",
+    "lastName": "User",
+    "email": "test@beeboard.com",
+    "password": "TestUser123!@#$%^&*()_+abcdef",
+    "roleId": "{{someRoleId}}",
+    "contractEndDate": "2026-12-31"
+  }
+}
+
+tests {
+  test("should return 403 Forbidden - Missing USER_CREATE permission", function() {
+    expect(res.status).to.equal(403);
+  });
+}
+
+docs {
+  # Security Test: Permission Check
+
+  Endpoints protected by @RequiresPermission should return 403
+  when the user doesn't have the required permission.
+
+  HR_MANAGER doesn't have USER_CREATE permission.
+}

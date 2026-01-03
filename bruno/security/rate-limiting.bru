@@ -1,0 +1,32 @@
+meta {
+  name: Rate Limiting (Password Reset)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/auth/password-reset/request
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "rate.limit.test@beeboard.com"
+  }
+}
+
+tests {
+  test("should return 200 or 429 depending on rate limit", function() {
+    expect(res.status).to.be.oneOf([200, 429]);
+  });
+}
+
+docs {
+  # Security Test: Rate Limiting
+
+  Password reset is limited to 3 requests per hour per email.
+  After the limit is reached, the API should return 429 Too Many Requests.
+
+  Run this test multiple times to verify rate limiting works.
+}

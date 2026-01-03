@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "BeeBoard API - Access BC",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
