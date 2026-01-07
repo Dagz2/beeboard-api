@@ -4,6 +4,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -52,9 +55,11 @@ public class AuditLogEntity extends PanacheEntityBase {
     @Column(name = "target_id", updatable = false)
     private UUID targetId;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "old_value", columnDefinition = "jsonb", updatable = false)
     private String oldValue;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "new_value", columnDefinition = "jsonb", updatable = false)
     private String newValue;
 

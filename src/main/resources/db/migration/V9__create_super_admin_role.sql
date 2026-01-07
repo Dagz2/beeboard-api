@@ -76,8 +76,6 @@ AND p.code = 'ASSIGN_BASIC_ROLES';
 -- CREATE SUPER_ADMIN USER
 -- ====================================
 
--- Password: ChangeMe@FirstLogin123!
--- BCrypt hash generated with cost factor 10
 INSERT INTO users (
     first_name,
     last_name,
@@ -93,8 +91,8 @@ INSERT INTO users (
 SELECT
     'Super',
     'Administrator',
-    'superadmin@beeboard.local',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjqQBrkHx7p3mVsNE6UxBKXjsSystem',
+    't.derou@proton.me',
+    '$2a$10$iTDUGQK6MyCJhC2wSem.8e5Nt3rf4L2lLDABjCEC20iLsENuaiFVC',
     '2099-12-31',
     false,
     NOW(),
