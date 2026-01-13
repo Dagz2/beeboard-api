@@ -7,10 +7,14 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.note.application.dto.command.note.*;
+import org.note.application.dto.query.CommentDto;
 import org.note.application.dto.query.NoteDto;
 import org.note.application.usecase.command.note.*;
+import org.note.application.usecase.query.CommentQueryService;
 import org.note.application.usecase.query.NoteQueryService;
 import org.note.exposition.service.NoteUserContextService;
+
+import java.util.Optional;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -67,9 +71,18 @@ public class NoteResource {
     @Inject
     UnshareNote unshareNote;
 
-    // Query service
+    @Inject
+    ChangeNoteCategory changeNoteCategory;
+
+    @Inject
+    ChangeNoteVisibility changeNoteVisibility;
+
+    // Query services
     @Inject
     NoteQueryService noteQueryService;
+
+    @Inject
+    CommentQueryService commentQueryService;
 
     // ==================== Note CRUD Operations ====================
 
@@ -673,6 +686,190 @@ public class NoteResource {
             return Response.noContent().build();
         } catch (Exception e) {
             Log.error("Request failed: DELETE /notes/" + noteId + "/share/" + userId + " - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    // ==================== Note Change Operations ====================
+
+    /**
+     * PUT /notes/{noteId}/category
+     * Change note category.
+     *
+     * @param noteId the note ID
+     * @param command the change category command
+     * @return 200 OK
+     */
+    @PUT
+    @Path("/{noteId}/category")
+    @Operation(
+        summary = "Change note category",
+        description = "Note author can change the note's category. **Required permission: Note author**"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Category changed successfully"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized - note author only"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "Note not found"
+    )
+    @APIResponse(
+        responseCode = "400",
+        description = "Invalid category value"
+    )
+    public Response changeNoteCategory(
+        @PathParam("noteId") UUID noteId,
+        @Valid ChangeNoteCategoryCommand command) {
+
+        Log.info("Request received: PUT /notes/" + noteId + "/category");
+        try {
+            if (!noteId.equals(command.noteId())) {
+                throw new IllegalArgumentException("Path parameter must match command body");
+            }
+
+            changeNoteCategory.execute(command, userContextService.getCurrentContext());
+            Log.info("Request successful: PUT /notes/" + noteId + "/category");
+            return Response.ok().build();
+        } catch (Exception e) {
+            Log.error("Request failed: PUT /notes/" + noteId + "/category - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * PUT /notes/{noteId}/visibility
+     * Change note visibility.
+     *
+     * @param noteId the note ID
+     * @param command the change visibility command
+     * @return 200 OK
+     */
+    @PUT
+    @Path("/{noteId}/visibility")
+    @Operation(
+        summary = "Change note visibility",
+        description = "Note author can change visibility (PRIVATE/SHARED/PROJECT). Requires projectId for PROJECT visibility. **Required permission: Note author**"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Visibility changed successfully"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized - note author only"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "Note not found"
+    )
+    @APIResponse(
+        responseCode = "400",
+        description = "Invalid visibility value or missing projectId"
+    )
+    public Response changeNoteVisibility(
+        @PathParam("noteId") UUID noteId,
+        @Valid ChangeNoteVisibilityCommand command) {
+
+        Log.info("Request received: PUT /notes/" + noteId + "/visibility");
+        try {
+            if (!noteId.equals(command.noteId())) {
+                throw new IllegalArgumentException("Path parameter must match command body");
+            }
+
+            changeNoteVisibility.execute(command, userContextService.getCurrentContext());
+            Log.info("Request successful: PUT /notes/" + noteId + "/visibility");
+            return Response.ok().build();
+        } catch (Exception e) {
+            Log.error("Request failed: PUT /notes/" + noteId + "/visibility - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    // ==================== Solution Query Operations ====================
+
+    /**
+     * GET /notes/{noteId}/solutions/proposed
+     * Get proposed solutions for a note.
+     *
+     * @param noteId the note ID
+     * @return 200 OK with list of proposed solutions
+     */
+    @GET
+    @Path("/{noteId}/solutions/proposed")
+    @Operation(
+        summary = "Get proposed solutions",
+        description = "Get all comments proposed as solutions (awaiting validation)"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Proposed solutions retrieved"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "Note not found"
+    )
+    public Response getProposedSolutions(@PathParam("noteId") UUID noteId) {
+        Log.info("Request received: GET /notes/" + noteId + "/solutions/proposed");
+        try {
+            List<CommentDto> solutions = commentQueryService.findProposedSolutions(
+                noteId, userContextService.getCurrentContext());
+            Log.info("Request successful: GET /notes/" + noteId + "/solutions/proposed - " + solutions.size() + " proposed solutions");
+            return Response.ok(solutions).build();
+        } catch (Exception e) {
+            Log.error("Request failed: GET /notes/" + noteId + "/solutions/proposed - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * GET /notes/{noteId}/solution
+     * Get the validated solution for a note.
+     *
+     * @param noteId the note ID
+     * @return 200 OK with validated solution, or 404 if none exists
+     */
+    @GET
+    @Path("/{noteId}/solution")
+    @Operation(
+        summary = "Get validated solution",
+        description = "Get the accepted solution for this note (if one exists)"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Validated solution retrieved"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "Note not found or no validated solution"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized"
+    )
+    public Response getValidatedSolution(@PathParam("noteId") UUID noteId) {
+        Log.info("Request received: GET /notes/" + noteId + "/solution");
+        try {
+            Optional<CommentDto> solution = commentQueryService.findValidatedSolution(
+                noteId, userContextService.getCurrentContext());
+
+            if (solution.isEmpty()) {
+                Log.info("No validated solution for note: " + noteId);
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+
+            Log.info("Request successful: GET /notes/" + noteId + "/solution");
+            return Response.ok(solution.get()).build();
+        } catch (Exception e) {
+            Log.error("Request failed: GET /notes/" + noteId + "/solution - " + e.getMessage());
             throw e;
         }
     }
