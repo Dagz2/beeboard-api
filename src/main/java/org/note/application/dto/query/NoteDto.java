@@ -16,7 +16,12 @@ public class NoteDto {
     private String category;
     private String visibility;
     private String status;
-    private UUID authorId;
+
+    @Deprecated(since = "v2.0", forRemoval = false)
+    private UUID authorId;  // Kept for backward compatibility
+
+    private AuthorDto author;  // NEW: Enriched author information
+
     private UUID projectId;
     private Set<UUID> tagIds;
     private Set<RecipientDto> recipients;
@@ -103,12 +108,22 @@ public class NoteDto {
         this.status = status;
     }
 
+    @Deprecated(since = "v2.0", forRemoval = false)
     public UUID getAuthorId() {
         return authorId;
     }
 
+    @Deprecated(since = "v2.0", forRemoval = false)
     public void setAuthorId(UUID authorId) {
         this.authorId = authorId;
+    }
+
+    public AuthorDto getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(AuthorDto author) {
+        this.author = author;
     }
 
     public UUID getProjectId() {

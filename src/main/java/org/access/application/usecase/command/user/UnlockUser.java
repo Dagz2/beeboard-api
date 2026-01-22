@@ -6,6 +6,7 @@ import jakarta.transaction.Transactional;
 
 import org.access.application.dto.command.user.UnlockUserCommand;
 import org.access.application.service.AuditService;
+import org.access.domain.event.UserUnlockedEvent;
 import org.access.domain.model.Role;
 import org.access.domain.model.SecurityContext;
 import org.access.domain.model.User;
@@ -13,6 +14,7 @@ import org.access.domain.model.UserId;
 import org.access.domain.repository.RoleRepository;
 import org.access.domain.repository.UserRepository;
 import org.access.domain.service.PrivilegeEscalationGuard;
+import org.shared.event.EventPublisher;
 
 /**
  * Use case for unlocking a user account.
@@ -33,6 +35,7 @@ public class UnlockUser {
     private final RoleRepository roleRepository;
     private final PrivilegeEscalationGuard privilegeGuard;
     private final AuditService auditService;
+    private final EventPublisher eventPublisher;
 
     /**
      * Constructs the use case with the required dependencies.
@@ -44,11 +47,13 @@ public class UnlockUser {
      */
     @Inject
     public UnlockUser(UserRepository userRepository, RoleRepository roleRepository,
-                      PrivilegeEscalationGuard privilegeGuard, AuditService auditService) {
+                      PrivilegeEscalationGuard privilegeGuard, AuditService auditService,
+                      EventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.privilegeGuard = privilegeGuard;
         this.auditService = auditService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -89,5 +94,14 @@ public class UnlockUser {
             "{\"isLocked\": true}",
             "{\"isLocked\": false}"
         );
+
+        // Publish domain event for cross-BC consistency
+        eventPublisher.publishAsync(new UserUnlockedEvent(
+            null,  // eventId auto-generated
+            command.userId(),
+            user.getEmail().value(),
+            securityContext.actorId().id(),
+            null  // occurredAt auto-generated
+        ));
     }
 }

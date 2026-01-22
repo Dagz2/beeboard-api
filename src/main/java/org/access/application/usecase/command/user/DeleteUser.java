@@ -6,6 +6,7 @@ import jakarta.transaction.Transactional;
 
 import org.access.application.dto.command.user.DeleteUserCommand;
 import org.access.application.service.AuditService;
+import org.access.domain.event.UserDeletedEvent;
 import org.access.domain.model.Role;
 import org.access.domain.model.SecurityContext;
 import org.access.domain.model.User;
@@ -13,6 +14,7 @@ import org.access.domain.model.UserId;
 import org.access.domain.repository.RoleRepository;
 import org.access.domain.repository.UserRepository;
 import org.access.domain.service.PrivilegeEscalationGuard;
+import org.shared.event.EventPublisher;
 
 /**
  * Use case for permanently deleting a user from the system.
@@ -34,6 +36,7 @@ public class DeleteUser {
     private final RoleRepository roleRepository;
     private final PrivilegeEscalationGuard privilegeGuard;
     private final AuditService auditService;
+    private final EventPublisher eventPublisher;
 
     /**
      * Constructs the use case with the required dependencies.
@@ -45,11 +48,13 @@ public class DeleteUser {
      */
     @Inject
     public DeleteUser(UserRepository userRepository, RoleRepository roleRepository,
-                      PrivilegeEscalationGuard privilegeGuard, AuditService auditService) {
+                      PrivilegeEscalationGuard privilegeGuard, AuditService auditService,
+                      EventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.privilegeGuard = privilegeGuard;
         this.auditService = auditService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -83,6 +88,10 @@ public class DeleteUser {
             throw new IllegalStateException("User must be locked before deletion. User ID: " + command.userId());
         }
 
+        // Capture user data BEFORE deletion for event
+        String email = user.getEmail().value();
+        String fullName = user.getFullName().toString();
+
         userRepository.deleteById(targetUserId);
 
         // Audit the operation
@@ -91,8 +100,18 @@ public class DeleteUser {
             "DELETE_USER",
             "USER",
             targetUserId.id().toString(),
-            "{\"email\": \"" + user.getEmail().value() + "\"}",
+            "{\"email\": \"" + email + "\"}",
             null
         );
+
+        // Publish domain event for cross-BC consistency
+        eventPublisher.publishAsync(new UserDeletedEvent(
+            null,  // eventId auto-generated
+            command.userId(),
+            email,
+            fullName,
+            securityContext.actorId().id(),
+            null  // occurredAt auto-generated
+        ));
     }
 }

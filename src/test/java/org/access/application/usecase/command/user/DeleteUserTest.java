@@ -40,11 +40,14 @@ class DeleteUserTest {
     @Mock
     AuditService auditService;
 
+    @Mock
+    org.shared.event.EventPublisher eventPublisher;
+
     DeleteUser useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new DeleteUser(userRepository, roleRepository, privilegeGuard, auditService);
+        useCase = new DeleteUser(userRepository, roleRepository, privilegeGuard, auditService, eventPublisher);
     }
 
     @Nested

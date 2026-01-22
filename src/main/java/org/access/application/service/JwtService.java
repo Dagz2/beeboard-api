@@ -45,7 +45,7 @@ public class JwtService {
         return Jwt.issuer(issuer)
                 .upn(user.getEmail().value()) // User Principal Name (email)
                 .subject(user.getId().id().toString()) // Subject (user ID)
-                .groups(new HashSet<>(Arrays.asList(role.code().value()))) // Groups (role CODE for @RolesAllowed)
+                .groups(new HashSet<>(Arrays.asList(role.code().value())))
                 .issuedAt(now)
                 .expiresAt(expirationTime)
                 .claim("fullName", user.getFullName().firstName() + " " + user.getFullName().lastName())

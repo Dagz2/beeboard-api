@@ -44,6 +44,9 @@ class AssignNewRoleTest {
     @Mock
     SecurityContextService securityContextService;
 
+    @Mock
+    org.shared.event.EventPublisher eventPublisher;
+
     AssignNewRole useCase;
 
     @BeforeEach
@@ -53,7 +56,8 @@ class AssignNewRoleTest {
             roleRepository,
             privilegeGuard,
             auditService,
-            securityContextService
+            securityContextService,
+            eventPublisher
         );
     }
 

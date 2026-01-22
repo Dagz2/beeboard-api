@@ -26,8 +26,8 @@ import java.lang.annotation.Target;
  * public Response getUsers(...) { }
  *
  * // Require all permissions (AND logic)
- * &#64;RequiresPermission(value = {"PROJECT_VIEW_ALL", "REPORT_GENERATE"}, operator = LogicalOperator.AND)
- * public Response generateProjectReport(...) { }
+ * &#64;RequiresPermission(value = {"USER_VIEW_ALL", "REPORT_GENERATE"}, operator = LogicalOperator.AND)
+ * public Response generateUserReport(...) { }
  * </pre>
  */
 @Inherited

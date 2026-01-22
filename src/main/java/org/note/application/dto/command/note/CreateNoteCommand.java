@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -27,6 +28,8 @@ public record CreateNoteCommand(
         @NotNull(message = "Visibility is required")
         String visibility,
 
-        UUID projectId  // Optional, required only for PROJECT visibility
+        UUID projectId,  // Optional, required only for PROJECT visibility
+
+        Set<UUID> tagIds  // Optional, tags to associate with the note at creation
 ) {
 }

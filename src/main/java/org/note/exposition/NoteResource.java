@@ -12,6 +12,7 @@ import org.note.application.dto.query.NoteDto;
 import org.note.application.usecase.command.note.*;
 import org.note.application.usecase.query.CommentQueryService;
 import org.note.application.usecase.query.NoteQueryService;
+import org.note.domain.model.NoteUserContext;
 import org.note.exposition.service.NoteUserContextService;
 
 import java.util.Optional;
@@ -84,19 +85,41 @@ public class NoteResource {
     @Inject
     CommentQueryService commentQueryService;
 
-    // ==================== Note CRUD Operations ====================
+    // ========================================
+    // CRUD OPERATIONS
+    // ========================================
 
     /**
-     * POST /notes
-     * Creates a new note.
+     * Creates a new note in the system.
      *
-     * @param command the create note command
-     * @return 201 Created
+     * Validates the input data and creates a note with the specified title,
+     * content, category (QUESTION, TIP, DOCUMENTATION), visibility, and
+     * optional tags. The author is automatically set to the current
+     * authenticated user.
+     *
+     * Visibility controls who can access the note:
+     * - PRIVATE: Visible only to the author and explicit recipients
+     * - SHARED: Visible to all authenticated users
+     * - PROJECT: Visible only within the context of a project (projectId required)
+     *
+     * Tags can be specified at creation time by providing a set of tag IDs.
+     * All tag IDs must correspond to existing tags in the system, otherwise
+     * the operation fails with a 400 error.
+     *
+     * If visibility=PROJECT, a valid projectId must be provided, otherwise the
+     * operation fails. Created notes are in ACTIVE status by default and can
+     * immediately receive comments.
+     *
+     * @param command validated data including title, content, category,
+     *                visibility, and optional tag IDs
+     * @return HTTP 201 Created upon successful creation
+     * @throws IllegalArgumentException if visibility=PROJECT without a valid projectId
+     * @throws org.note.domain.exception.TagNotFoundException if any tag ID doesn't exist
      */
     @POST
     @Operation(
         summary = "Create a new note",
-        description = "Creates a new note with title, content, category, and visibility settings. **Required permission: Authenticated user**"
+        description = "Creates a new note with title, content, category, visibility settings, and optional tags. **Required permission: Authenticated user**"
     )
     @APIResponse(
         responseCode = "201",
@@ -104,7 +127,11 @@ public class NoteResource {
     )
     @APIResponse(
         responseCode = "400",
-        description = "Invalid input data"
+        description = "Invalid input data (missing required fields, invalid visibility/projectId combination, or tag not found)"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
     )
     @RequestBody(
         description = "Note creation data",
@@ -120,7 +147,11 @@ public class NoteResource {
                     "contentType": "TEXT",
                     "category": "TIP",
                     "visibility": "SHARED",
-                    "projectId": null
+                    "projectId": null,
+                    "tagIds": [
+                        "880e8400-e29b-41d4-a716-446655440010",
+                        "880e8400-e29b-41d4-a716-446655440011"
+                    ]
                 }
                 """
             )
@@ -139,12 +170,24 @@ public class NoteResource {
     }
 
     /**
-     * PUT /notes/{noteId}
-     * Updates a note's title and content.
+     * Modifies the title and content of an existing note.
      *
-     * @param noteId the note ID
-     * @param command the update command
-     * @return 200 OK
+     * Allows the note author to update their note's title and text content
+     * at any time after creation. The modification does not allow changing
+     * the category or visibility (dedicated endpoints available).
+     *
+     * Only the original note author can perform this modification.
+     * Administrators, moderators, and other users cannot modify others' note
+     * content to preserve intellectual integrity and content attribution.
+     *
+     * The modification date (updatedAt) is automatically updated to indicate
+     * that the content has been modified. The note remains in ACTIVE status
+     * and retains all its existing comments, tags, and shares.
+     *
+     * @param noteId the unique identifier of the note to modify
+     * @param command validated data including the new title and content
+     * @return HTTP 200 OK upon successful modification
+     * @throws jakarta.ws.rs.ForbiddenException if the user is not the author
      */
     @PUT
     @Path("/{noteId}")
@@ -159,6 +202,14 @@ public class NoteResource {
     @APIResponse(
         responseCode = "404",
         description = "Note not found"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized - only note author can update"
     )
     @RequestBody(
         description = "Note update data",
@@ -191,11 +242,23 @@ public class NoteResource {
     }
 
     /**
-     * GET /notes/{noteId}
-     * Gets a note by ID.
+     * Retrieves a specific note by its identifier.
      *
-     * @param noteId the note ID
-     * @return 200 OK with note DTO, or 404 Not Found
+     * Returns the complete details of a note using its UUID, including title,
+     * content, category, visibility, status, author, tags, recipients, comments,
+     * and audit metadata (creation, modification, and archiving dates).
+     *
+     * Access is subject to the note's visibility rules:
+     * - PRIVATE: Accessible only to the author and explicit recipients
+     * - SHARED: Accessible to all authenticated users
+     * - PROJECT: Accessible only within the context of the specified project
+     *
+     * Archived notes (status=ARCHIVED) are still accessible but marked as such
+     * for contextual information. Users without appropriate permission receive
+     * a 403 error even if the note exists.
+     *
+     * @param noteId the unique identifier of the note
+     * @return HTTP 200 OK with the complete note DTO if found and authorized, HTTP 404 Not Found otherwise
      */
     @GET
     @Path("/{noteId}")
@@ -212,7 +275,7 @@ public class NoteResource {
                 name = "Note Response",
                 value = """
                 {
-                    "noteId": "550e8400-e29b-41d4-a716-446655440000",
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
                     "title": "How to fix null pointer exception",
                     "content": "Always check for null before dereferencing objects",
                     "contentType": "TEXT",
@@ -220,12 +283,18 @@ public class NoteResource {
                     "visibility": "SHARED",
                     "status": "ACTIVE",
                     "authorId": "660e8400-e29b-41d4-a716-446655440001",
+                    "author": {
+                        "userId": "660e8400-e29b-41d4-a716-446655440001",
+                        "fullName": "John Doe"
+                    },
                     "projectId": null,
                     "tagIds": [],
                     "recipients": [],
                     "comments": [],
-                    "createdAt": "2024-01-15T10:00:00Z",
-                    "updatedAt": "2024-01-15T10:00:00Z",
+                    "auditInfo": {
+                        "createdAt": "2024-01-15T10:00:00Z",
+                        "updatedAt": "2024-01-15T10:00:00Z"
+                    },
                     "archivedAt": null
                 }
                 """
@@ -235,6 +304,14 @@ public class NoteResource {
     @APIResponse(
         responseCode = "404",
         description = "Note not found"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized to view this note based on visibility rules"
     )
     public Response getNoteById(@PathParam("noteId") UUID noteId) {
         Log.info("Request received: GET /notes/" + noteId + " - Retrieving note by ID");
@@ -253,11 +330,26 @@ public class NoteResource {
     }
 
     /**
-     * DELETE /notes/{noteId}
-     * Deletes a note (soft delete).
+     * Deletes a note from the system (soft delete).
      *
-     * @param noteId the note ID
-     * @return 204 No Content
+     * Performs a logical deletion of the note by hiding it from display
+     * while preserving the data for audit and traceability. The note is not
+     * physically deleted from the database.
+     *
+     * Two categories of users can delete a note:
+     * - The note author (can delete their own notes)
+     * - Supervisors (can delete any note for moderation)
+     *
+     * Deleting a note also logically deletes all its comments, but preserves
+     * the tags which remain available for other notes. Shares (recipients) are
+     * also removed.
+     *
+     * This operation is irreversible from the user's perspective, but the
+     * data remains accessible for administrative audit.
+     *
+     * @param noteId the unique identifier of the note to delete
+     * @return HTTP 204 No Content upon successful deletion
+     * @throws jakarta.ws.rs.ForbiddenException if the user is neither author nor supervisor
      */
     @DELETE
     @Path("/{noteId}")
@@ -272,6 +364,14 @@ public class NoteResource {
     @APIResponse(
         responseCode = "404",
         description = "Note not found"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized - must be note author or SUPERVISOR"
     )
     public Response deleteNote(@PathParam("noteId") UUID noteId) {
         Log.info("Request received: DELETE /notes/" + noteId + " - Deleting note");
@@ -288,13 +388,26 @@ public class NoteResource {
         }
     }
 
-    // ==================== Note Queries ====================
+    // ========================================
+    // QUERY OPERATIONS
+    // ========================================
 
     /**
-     * GET /notes
-     * Gets all active notes (filtered by access rules in application layer).
+     * Retrieves all active notes accessible to the user.
      *
-     * @return 200 OK with list of notes
+     * Returns the list of all notes in ACTIVE status that the user has the
+     * right to view according to visibility rules. Access filtering is applied
+     * automatically at the application level.
+     *
+     * Returned notes respect the following rules:
+     * - PRIVATE notes: Only those created by the user or shared with them
+     * - SHARED notes: All notes with public visibility
+     * - PROJECT notes: Only those from projects the user belongs to
+     *
+     * Archived notes (status=ARCHIVED) are not included in this list. Use the
+     * dedicated endpoint to retrieve archived notes.
+     *
+     * @return HTTP 200 OK with the list of accessible active notes
      */
     @GET
     @Operation(
@@ -303,7 +416,59 @@ public class NoteResource {
     )
     @APIResponse(
         responseCode = "200",
-        description = "Notes retrieved successfully"
+        description = "Notes retrieved successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Note List Response",
+                value = """
+                [
+                    {
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                        "title": "How to fix null pointer exception",
+                        "content": "Always check for null before dereferencing objects",
+                        "contentType": "TEXT",
+                        "category": "TIP",
+                        "visibility": "SHARED",
+                        "status": "ACTIVE",
+                        "authorId": "660e8400-e29b-41d4-a716-446655440001",
+                        "author": {
+                            "userId": "660e8400-e29b-41d4-a716-446655440001",
+                            "fullName": "John Doe"
+                        },
+                        "projectId": null,
+                        "auditInfo": {
+                            "createdAt": "2024-01-15T10:00:00Z",
+                            "updatedAt": "2024-01-15T10:00:00Z"
+                        }
+                    },
+                    {
+                        "id": "550e8400-e29b-41d4-a716-446655440002",
+                        "title": "Understanding Java Streams",
+                        "content": "Streams provide a functional approach to processing collections",
+                        "contentType": "MARKDOWN",
+                        "category": "DOCUMENTATION",
+                        "visibility": "SHARED",
+                        "status": "ACTIVE",
+                        "authorId": "660e8400-e29b-41d4-a716-446655440002",
+                        "author": {
+                            "userId": "660e8400-e29b-41d4-a716-446655440002",
+                            "fullName": "Jane Smith"
+                        },
+                        "projectId": null,
+                        "auditInfo": {
+                            "createdAt": "2024-01-16T14:30:00Z",
+                            "updatedAt": "2024-01-16T14:30:00Z"
+                        }
+                    }
+                ]
+                """
+            )
+        )
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
     )
     public Response getAllNotes() {
         Log.info("Request received: GET /notes - Retrieving all active notes");
@@ -318,11 +483,85 @@ public class NoteResource {
     }
 
     /**
-     * GET /notes/author/{authorId}
-     * Gets all notes by a specific author.
+     * Retrieves all archived notes accessible to the current user.
      *
-     * @param authorId the author ID
-     * @return 200 OK with list of notes
+     * Returns notes with status = ARCHIVED, filtered by access rights:
+     * - SUPERVISOR: Can view all archived notes from any author
+     * - Regular user: Can view only their own archived notes
+     *
+     * Archived notes are read-only and cannot be edited or commented on.
+     * They can be restored to ACTIVE status by the author or a SUPERVISOR.
+     *
+     * @return HTTP 200 OK with the list of accessible archived notes
+     */
+    @GET
+    @Path("/archived")
+    @Operation(
+        summary = "Get archived notes",
+        description = "Retrieve archived notes. SUPERVISOR sees all archived notes, regular users see only their own. **Required permission: Authenticated user**"
+    )
+    @APIResponse(
+        responseCode = "200",
+        description = "Archived notes retrieved successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                value = """
+                    [
+                        {
+                            "id": "123e4567-e89b-12d3-a456-426614174000",
+                            "title": "Old Meeting Notes",
+                            "content": "Notes from Q1 planning",
+                            "status": "ARCHIVED",
+                            "category": "DOCUMENTATION",
+                            "visibility": "SHARED",
+                            "archivedAt": "2024-12-01T10:30:00Z",
+                            "author": {
+                                "userId": "user123",
+                                "username": "john.doe"
+                            }
+                        }
+                    ]
+                    """
+            )
+        )
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
+    )
+    public Response getArchivedNotes() {
+        Log.info("Request received: GET /notes/archived - Retrieving archived notes");
+        try {
+            NoteUserContext userContext = userContextService.getCurrentContext();
+            List<NoteDto> notes = noteQueryService.findArchivedNotes(
+                    userContext.userId(),
+                    userContext.isSupervisor()
+            );
+            Log.info("Request successful: GET /notes/archived - Retrieved " + notes.size() + " archived notes");
+            return Response.ok(notes).build();
+        } catch (Exception e) {
+            Log.error("Request failed: GET /notes/archived - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Retrieves all notes created by a specific author.
+     *
+     * Returns the list of notes whose author matches the provided identifier,
+     * including only notes that the authenticated user has access to according
+     * to visibility rules.
+     *
+     * A user can see their own PRIVATE notes, but will only see PRIVATE notes
+     * from other authors if they are an explicit recipient. SHARED and PROJECT
+     * notes are subject to the usual rules.
+     *
+     * Useful for displaying an author's profile or filtering contributions from
+     * a specific team member.
+     *
+     * @param authorId the unique identifier of the author
+     * @return HTTP 200 OK with the list of accessible notes from the author
      */
     @GET
     @Path("/author/{authorId}")
@@ -332,7 +571,32 @@ public class NoteResource {
     )
     @APIResponse(
         responseCode = "200",
-        description = "Notes retrieved successfully"
+        description = "Notes retrieved successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Notes By Author Response",
+                value = """
+                [
+                    {
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                        "title": "How to fix null pointer exception",
+                        "author": {
+                            "userId": "660e8400-e29b-41d4-a716-446655440001",
+                            "fullName": "John Doe"
+                        },
+                        "category": "TIP",
+                        "visibility": "SHARED",
+                        "status": "ACTIVE"
+                    }
+                ]
+                """
+            )
+        )
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
     )
     public Response getNotesByAuthor(@PathParam("authorId") UUID authorId) {
         Log.info("Request received: GET /notes/author/" + authorId + " - Retrieving notes by author");
@@ -347,21 +611,57 @@ public class NoteResource {
     }
 
     /**
-     * GET /notes/category/{category}
-     * Gets all notes in a specific category.
+     * Retrieves all notes in a specific category.
      *
-     * @param category the category name
-     * @return 200 OK with list of notes
+     * Returns the list of notes belonging to the specified category (QUESTION,
+     * TIP, DOCUMENTATION), filtered according to the authenticated user's
+     * access permissions.
+     *
+     * Categories allow classifying the type of content:
+     * - QUESTION: Notes posing a question that requires an answer
+     * - TIP: Tips and best practices to share
+     * - DOCUMENTATION: Technical or procedural documentation
+     *
+     * Only active notes accessible according to visibility rules are included
+     * in the results.
+     *
+     * @param category the category name (QUESTION, TIP, DOCUMENTATION)
+     * @return HTTP 200 OK with the list of accessible notes in the category
      */
     @GET
     @Path("/category/{category}")
     @Operation(
         summary = "Get notes by category",
-        description = "Returns all notes in a specific category (BUG, TIP, DOCUMENTATION, etc.). **Required permission: Authenticated user**"
+        description = "Returns all notes in a specific category (QUESTION, TIP, DOCUMENTATION). **Required permission: Authenticated user**"
     )
     @APIResponse(
         responseCode = "200",
-        description = "Notes retrieved successfully"
+        description = "Notes retrieved successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Notes By Category Response",
+                value = """
+                [
+                    {
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                        "title": "How to configure JWT authentication?",
+                        "author": {
+                            "userId": "660e8400-e29b-41d4-a716-446655440001",
+                            "fullName": "John Doe"
+                        },
+                        "category": "QUESTION",
+                        "visibility": "SHARED",
+                        "status": "ACTIVE"
+                    }
+                ]
+                """
+            )
+        )
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
     )
     public Response getNotesByCategory(@PathParam("category") String category) {
         Log.info("Request received: GET /notes/category/" + category + " - Retrieving notes by category");
@@ -376,11 +676,21 @@ public class NoteResource {
     }
 
     /**
-     * GET /notes/project/{projectId}
-     * Gets all notes linked to a specific project.
+     * Retrieves all notes linked to a specific project.
      *
-     * @param projectId the project ID
-     * @return 200 OK with list of notes
+     * Returns the list of notes with visibility=PROJECT and associated with
+     * the project specified by its identifier. Access is limited to members
+     * of the concerned project.
+     *
+     * PROJECT notes are contextual to a project and are only visible within
+     * that project's context. They allow centralizing project-specific
+     * documentation, questions, and tips.
+     *
+     * A user who is not a project member will receive an empty list or an
+     * authorization error depending on the security filter implementation.
+     *
+     * @param projectId the unique identifier of the project
+     * @return HTTP 200 OK with the list of accessible project notes
      */
     @GET
     @Path("/project/{projectId}")
@@ -390,7 +700,37 @@ public class NoteResource {
     )
     @APIResponse(
         responseCode = "200",
-        description = "Notes retrieved successfully"
+        description = "Notes retrieved successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Notes By Project Response",
+                value = """
+                [
+                    {
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                        "title": "Project Setup Guide",
+                        "author": {
+                            "userId": "660e8400-e29b-41d4-a716-446655440001",
+                            "fullName": "John Doe"
+                        },
+                        "category": "DOCUMENTATION",
+                        "visibility": "PROJECT",
+                        "status": "ACTIVE",
+                        "projectId": "770e8400-e29b-41d4-a716-446655440005"
+                    }
+                ]
+                """
+            )
+        )
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized - must be project member"
     )
     public Response getNotesByProject(@PathParam("projectId") UUID projectId) {
         Log.info("Request received: GET /notes/project/" + projectId + " - Retrieving notes by project");
@@ -405,11 +745,20 @@ public class NoteResource {
     }
 
     /**
-     * GET /notes/tag/{tagId}
-     * Gets all notes with a specific tag.
+     * Retrieves all notes associated with a specific tag.
      *
-     * @param tagId the tag ID
-     * @return 200 OK with list of notes
+     * Returns the list of notes that have been tagged with the specified tag,
+     * filtered according to the authenticated user's access permissions.
+     *
+     * Tags allow flexible and multi-dimensional classification of notes (e.g.,
+     * "java", "spring", "bug-fix", "performance"). A note can have multiple
+     * tags, and this endpoint returns all notes having at least the specified tag.
+     *
+     * Only notes accessible according to visibility rules are included in the
+     * results, even if they possess the tag.
+     *
+     * @param tagId the unique identifier of the tag
+     * @return HTTP 200 OK with the list of accessible tagged notes
      */
     @GET
     @Path("/tag/{tagId}")
@@ -419,7 +768,32 @@ public class NoteResource {
     )
     @APIResponse(
         responseCode = "200",
-        description = "Notes retrieved successfully"
+        description = "Notes retrieved successfully",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Notes By Tag Response",
+                value = """
+                [
+                    {
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                        "title": "Spring Boot configuration tips",
+                        "author": {
+                            "userId": "660e8400-e29b-41d4-a716-446655440001",
+                            "fullName": "John Doe"
+                        },
+                        "category": "TIP",
+                        "visibility": "SHARED",
+                        "status": "ACTIVE"
+                    }
+                ]
+                """
+            )
+        )
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
     )
     public Response getNotesByTag(@PathParam("tagId") UUID tagId) {
         Log.info("Request received: GET /notes/tag/" + tagId + " - Retrieving notes by tag");
@@ -433,14 +807,30 @@ public class NoteResource {
         }
     }
 
-    // ==================== Note Lifecycle ====================
+    // ========================================
+    // LIFECYCLE OPERATIONS
+    // ========================================
 
     /**
-     * PUT /notes/{noteId}/archive
-     * Archives a note.
+     * Archives a note by removing it from active display.
      *
-     * @param noteId the note ID
-     * @return 200 OK
+     * Changes a note from ACTIVE status to ARCHIVED status, removing it
+     * from the main display and active note lists. The note remains
+     * accessible through dedicated archive queries.
+     *
+     * Two categories of users can archive a note:
+     * - The note author (managing their own content)
+     * - Supervisors (administration and organization)
+     *
+     * Archiving preserves all data, comments, tags, and metadata.
+     * Comments remain viewable but no new comments can be added
+     * to an archived note.
+     *
+     * The operation is reversible via the restore endpoint.
+     *
+     * @param noteId the unique identifier of the note to archive
+     * @return HTTP 200 OK upon successful archiving
+     * @throws jakarta.ws.rs.ForbiddenException if the user is neither author nor supervisor
      */
     @PUT
     @Path("/{noteId}/archive")
@@ -455,6 +845,14 @@ public class NoteResource {
     @APIResponse(
         responseCode = "404",
         description = "Note not found"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized - must be note author or SUPERVISOR"
     )
     public Response archiveNote(@PathParam("noteId") UUID noteId) {
         Log.info("Request received: PUT /notes/" + noteId + "/archive - Archiving note");
@@ -472,11 +870,25 @@ public class NoteResource {
     }
 
     /**
-     * PUT /notes/{noteId}/restore
-     * Restores an archived note.
+     * Restores an archived note to active status.
      *
-     * @param noteId the note ID
-     * @return 200 OK
+     * Changes a note from ARCHIVED status back to ACTIVE status, making it
+     * visible again in the main display and active note lists. Reverses
+     * the archiving operation.
+     *
+     * Two categories of users can restore a note:
+     * - The note author (managing their own content)
+     * - Supervisors (administration and organization)
+     *
+     * Restoration fully reactivates the note: it can receive comments again,
+     * be modified, and appears in all active note queries.
+     *
+     * All comments, tags, and metadata are preserved and become
+     * immediately accessible again.
+     *
+     * @param noteId the unique identifier of the note to restore
+     * @return HTTP 200 OK upon successful restoration
+     * @throws jakarta.ws.rs.ForbiddenException if the user is neither author nor supervisor
      */
     @PUT
     @Path("/{noteId}/restore")
@@ -491,6 +903,14 @@ public class NoteResource {
     @APIResponse(
         responseCode = "404",
         description = "Note not found"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized - must be note author or SUPERVISOR"
     )
     public Response restoreNote(@PathParam("noteId") UUID noteId) {
         Log.info("Request received: PUT /notes/" + noteId + "/restore - Restoring note");
@@ -507,15 +927,31 @@ public class NoteResource {
         }
     }
 
-    // ==================== Tag Management ====================
+    // ========================================
+    // TAG MANAGEMENT
+    // ========================================
 
     /**
-     * POST /notes/{noteId}/tags
-     * Adds a tag to a note.
+     * Associates an existing tag with a note.
      *
-     * @param noteId the note ID
-     * @param command the add tag command
-     * @return 200 OK
+     * Adds a tag to a note's tag list to enable its classification and
+     * thematic indexing. The tag must already exist in the system
+     * (created via TagResource).
+     *
+     * Only the note author can add tags, preserving control over their
+     * content's classification. This restriction prevents tag spam and
+     * maintains classification consistency.
+     *
+     * A note can have multiple tags for multi-dimensional classification
+     * (e.g., "java", "spring", "performance"). Adding an already
+     * associated tag is idempotent (no error).
+     *
+     * This operation automatically increments the tag's usageCount.
+     *
+     * @param noteId the unique identifier of the note
+     * @param command validated data including the tag identifier
+     * @return HTTP 200 OK upon successful association
+     * @throws jakarta.ws.rs.ForbiddenException if the user is not the author
      */
     @POST
     @Path("/{noteId}/tags")
@@ -530,6 +966,14 @@ public class NoteResource {
     @APIResponse(
         responseCode = "404",
         description = "Note or tag not found"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized - only note author can add tags"
     )
     @RequestBody(
         description = "Add tag data",
@@ -561,12 +1005,25 @@ public class NoteResource {
     }
 
     /**
-     * DELETE /notes/{noteId}/tags/{tagId}
-     * Removes a tag from a note.
+     * Dissociates a tag from a note.
      *
-     * @param noteId the note ID
-     * @param tagId the tag ID
-     * @return 204 No Content
+     * Removes a tag from a note's associated tag list, eliminating that
+     * classification dimension. The tag itself is not deleted from the
+     * system and remains available for other notes.
+     *
+     * Only the note author can remove tags, preserving control over
+     * their content's classification.
+     *
+     * This operation automatically decrements the tag's usageCount. If the
+     * usageCount reaches 0, the tag becomes eligible for deletion via
+     * TagResource (unused tags can be cleaned up).
+     *
+     * Removing an unassociated tag is idempotent (no error).
+     *
+     * @param noteId the unique identifier of the note
+     * @param tagId the unique identifier of the tag to dissociate
+     * @return HTTP 204 No Content upon successful dissociation
+     * @throws jakarta.ws.rs.ForbiddenException if the user is not the author
      */
     @DELETE
     @Path("/{noteId}/tags/{tagId}")
@@ -581,6 +1038,14 @@ public class NoteResource {
     @APIResponse(
         responseCode = "404",
         description = "Note or tag not found"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized - only note author can remove tags"
     )
     public Response removeTag(@PathParam("noteId") UUID noteId,
                              @PathParam("tagId") UUID tagId) {
@@ -598,15 +1063,32 @@ public class NoteResource {
         }
     }
 
-    // ==================== Sharing ====================
+    // ========================================
+    // SHARING OPERATIONS
+    // ========================================
 
     /**
-     * POST /notes/{noteId}/share
-     * Shares a note with a user.
+     * Shares a note with a specific user.
      *
-     * @param noteId the note ID
-     * @param command the share command
-     * @return 200 OK
+     * Adds a user to the note's recipients list, granting them explicit
+     * access with a specified permission level (VIEWER, COMMENTER, EDITOR).
+     *
+     * Only the note author can share, controlling the distribution of their
+     * content. This feature is particularly useful for PRIVATE notes,
+     * allowing selective sharing without changing the global visibility.
+     *
+     * Possible access levels:
+     * - VIEWER: Can read the note and its comments
+     * - COMMENTER: Can read and add comments
+     * - EDITOR: Can read, comment, and propose solutions
+     *
+     * Sharing a note already shared with the same user updates the
+     * access level.
+     *
+     * @param noteId the unique identifier of the note
+     * @param command validated data including userId and accessLevel
+     * @return HTTP 200 OK upon successful sharing
+     * @throws jakarta.ws.rs.ForbiddenException if the user is not the author
      */
     @POST
     @Path("/{noteId}/share")
@@ -621,6 +1103,14 @@ public class NoteResource {
     @APIResponse(
         responseCode = "404",
         description = "Note not found"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized - only note author can share"
     )
     @RequestBody(
         description = "Share note data",
@@ -653,12 +1143,26 @@ public class NoteResource {
     }
 
     /**
-     * DELETE /notes/{noteId}/share/{userId}
-     * Unshares a note with a user.
+     * Revokes a user's shared access to a note.
      *
-     * @param noteId the note ID
-     * @param userId the user ID
-     * @return 204 No Content
+     * Removes a user from the note's recipients list, revoking their
+     * explicit access. The user will no longer be able to access the
+     * note unless it has SHARED or PROJECT visibility and they have
+     * access through those rules.
+     *
+     * Only the note author can revoke sharing, controlling the distribution
+     * of their content. This operation is the inverse of the share operation.
+     *
+     * Revocation is immediate: the user instantly loses access and can no
+     * longer view the note or its comments if it is PRIVATE.
+     *
+     * Revoking access for a user not present in the recipients list is
+     * idempotent (no error).
+     *
+     * @param noteId the unique identifier of the note
+     * @param userId the identifier of the user whose access is being revoked
+     * @return HTTP 204 No Content upon successful revocation
+     * @throws jakarta.ws.rs.ForbiddenException if the user is not the author
      */
     @DELETE
     @Path("/{noteId}/share/{userId}")
@@ -673,6 +1177,14 @@ public class NoteResource {
     @APIResponse(
         responseCode = "404",
         description = "Note not found"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Not authorized - only note author can unshare"
     )
     public Response unshareNote(@PathParam("noteId") UUID noteId,
                                 @PathParam("userId") UUID userId) {
@@ -690,15 +1202,32 @@ public class NoteResource {
         }
     }
 
-    // ==================== Note Change Operations ====================
+    // ========================================
+    // CONFIGURATION OPERATIONS
+    // ========================================
 
     /**
-     * PUT /notes/{noteId}/category
-     * Change note category.
+     * Changes an existing note's category.
      *
-     * @param noteId the note ID
-     * @param command the change category command
-     * @return 200 OK
+     * Allows the author to change their note's classification category
+     * between QUESTION, TIP, and DOCUMENTATION. This operation is separated
+     * from general updates to precisely control categorization.
+     *
+     * Only the author can change the category as it reflects the intent
+     * and content type of the note. Changing the category can affect how
+     * the note is discovered and used by other users.
+     *
+     * Valid categories are:
+     * - QUESTION: Note asking a question that needs an answer
+     * - TIP: Tip or best practice to share
+     * - DOCUMENTATION: Technical or procedural documentation
+     *
+     * The modification date (updatedAt) is updated automatically.
+     *
+     * @param noteId the unique identifier of the note
+     * @param command validated data including the new category
+     * @return HTTP 200 OK upon successful modification
+     * @throws jakarta.ws.rs.ForbiddenException if the user is not the author
      */
     @PUT
     @Path("/{noteId}/category")
@@ -722,6 +1251,10 @@ public class NoteResource {
         responseCode = "400",
         description = "Invalid category value"
     )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
+    )
     public Response changeNoteCategory(
         @PathParam("noteId") UUID noteId,
         @Valid ChangeNoteCategoryCommand command) {
@@ -742,12 +1275,31 @@ public class NoteResource {
     }
 
     /**
-     * PUT /notes/{noteId}/visibility
-     * Change note visibility.
+     * Changes an existing note's visibility.
      *
-     * @param noteId the note ID
-     * @param command the change visibility command
-     * @return 200 OK
+     * Allows the author to change their note's access rules between
+     * PRIVATE, SHARED, and PROJECT. This operation controls who can
+     * discover and access the note.
+     *
+     * Only the author can change visibility as it directly impacts
+     * the confidentiality and distribution of the content.
+     *
+     * Possible visibility options:
+     * - PRIVATE: Accessible only to the author and explicit recipients
+     * - SHARED: Accessible to all authenticated users
+     * - PROJECT: Accessible only within a project context (projectId required)
+     *
+     * Changing from PROJECT to PRIVATE/SHARED removes the project association.
+     * Changing to PROJECT without providing a valid projectId generates a 400 error.
+     *
+     * Changing visibility immediately affects access permissions for
+     * all users.
+     *
+     * @param noteId the unique identifier of the note
+     * @param command validated data including new visibility and optional projectId
+     * @return HTTP 200 OK upon successful modification
+     * @throws jakarta.ws.rs.ForbiddenException if the user is not the author
+     * @throws IllegalArgumentException if visibility=PROJECT without a valid projectId
      */
     @PUT
     @Path("/{noteId}/visibility")
@@ -769,7 +1321,11 @@ public class NoteResource {
     )
     @APIResponse(
         responseCode = "400",
-        description = "Invalid visibility value or missing projectId"
+        description = "Invalid visibility value or missing projectId for PROJECT visibility"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
     )
     public Response changeNoteVisibility(
         @PathParam("noteId") UUID noteId,
@@ -790,32 +1346,74 @@ public class NoteResource {
         }
     }
 
-    // ==================== Solution Query Operations ====================
+    // ========================================
+    // SOLUTION OPERATIONS
+    // ========================================
 
     /**
-     * GET /notes/{noteId}/solutions/proposed
-     * Get proposed solutions for a note.
+     * Retrieves all comments proposed as solutions.
      *
-     * @param noteId the note ID
-     * @return 200 OK with list of proposed solutions
+     * Returns the list of comments that have been proposed as potential
+     * solutions to the note (status=PROPOSED), awaiting validation by
+     * the note author or a supervisor.
+     *
+     * This endpoint displays candidate solutions to facilitate the
+     * validation process. The author can review all proposals and
+     * choose the one that effectively solves their problem.
+     *
+     * Comments are filtered according to the note's access permissions.
+     * Only PROPOSED comments (not REGULAR or VALIDATED) are returned.
+     *
+     * @param noteId the unique identifier of the note
+     * @return HTTP 200 OK with the list of proposed solutions
      */
     @GET
     @Path("/{noteId}/solutions/proposed")
     @Operation(
         summary = "Get proposed solutions",
-        description = "Get all comments proposed as solutions (awaiting validation)"
+        description = "Get all comments proposed as solutions (awaiting validation). **Required permission: Based on note visibility**"
     )
     @APIResponse(
         responseCode = "200",
-        description = "Proposed solutions retrieved"
+        description = "Proposed solutions retrieved",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Proposed Solutions Response",
+                value = """
+                [
+                    {
+                        "id": "770e8400-e29b-41d4-a716-446655440003",
+                        "authorId": "660e8400-e29b-41d4-a716-446655440001",
+                        "author": {
+                            "userId": "660e8400-e29b-41d4-a716-446655440001",
+                            "fullName": "John Doe"
+                        },
+                        "content": "You can use Optional.ofNullable() to avoid NPE",
+                        "parentCommentId": null,
+                        "solutionStatus": "PROPOSED",
+                        "moderationStatus": "VISIBLE",
+                        "auditInfo": {
+                            "createdAt": "2024-01-15T11:30:00Z",
+                            "updatedAt": "2024-01-15T11:30:00Z"
+                        }
+                    }
+                ]
+                """
+            )
+        )
     )
     @APIResponse(
         responseCode = "403",
-        description = "Not authorized"
+        description = "Not authorized to view this note"
     )
     @APIResponse(
         responseCode = "404",
         description = "Note not found"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
     )
     public Response getProposedSolutions(@PathParam("noteId") UUID noteId) {
         Log.info("Request received: GET /notes/" + noteId + "/solutions/proposed");
@@ -831,29 +1429,70 @@ public class NoteResource {
     }
 
     /**
-     * GET /notes/{noteId}/solution
-     * Get the validated solution for a note.
+     * Retrieves a note's validated solution.
      *
-     * @param noteId the note ID
-     * @return 200 OK with validated solution, or 404 if none exists
+     * Returns the comment that has been validated as the official solution
+     * to the note (status=VALIDATED). A note can only have one validated
+     * solution at a time.
+     *
+     * This endpoint displays the accepted solution directly without browsing
+     * through all comments. Particularly useful for users quickly seeking
+     * the answer to a similar question.
+     *
+     * If no solution has been validated yet, the endpoint returns 404.
+     * PROPOSED comments (awaiting validation) are not returned by this
+     * endpoint - use /solutions/proposed to view them.
+     *
+     * Access is subject to the parent note's visibility rules.
+     *
+     * @param noteId the unique identifier of the note
+     * @return HTTP 200 OK with the validated solution if it exists, HTTP 404 Not Found otherwise
      */
     @GET
     @Path("/{noteId}/solution")
     @Operation(
         summary = "Get validated solution",
-        description = "Get the accepted solution for this note (if one exists)"
+        description = "Get the accepted solution for this note (if one exists). **Required permission: Based on note visibility**"
     )
     @APIResponse(
         responseCode = "200",
-        description = "Validated solution retrieved"
+        description = "Validated solution retrieved",
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Validated Solution Response",
+                value = """
+                {
+                    "id": "770e8400-e29b-41d4-a716-446655440003",
+                    "authorId": "660e8400-e29b-41d4-a716-446655440001",
+                    "author": {
+                        "userId": "660e8400-e29b-41d4-a716-446655440001",
+                        "fullName": "John Doe"
+                    },
+                    "content": "You can use Optional.ofNullable() to avoid NPE",
+                    "parentCommentId": null,
+                    "solutionStatus": "VALIDATED",
+                    "moderationStatus": "VISIBLE",
+                    "auditInfo": {
+                        "createdAt": "2024-01-15T11:30:00Z",
+                        "updatedAt": "2024-01-15T12:00:00Z"
+                    }
+                }
+                """
+            )
+        )
     )
     @APIResponse(
         responseCode = "404",
-        description = "Note not found or no validated solution"
+        description = "Note not found or no validated solution exists"
     )
     @APIResponse(
         responseCode = "403",
-        description = "Not authorized"
+        description = "Not authorized to view this note"
+    )
+    @APIResponse(
+        responseCode = "401",
+        description = "Not authenticated - JWT token missing or invalid"
     )
     public Response getValidatedSolution(@PathParam("noteId") UUID noteId) {
         Log.info("Request received: GET /notes/" + noteId + "/solution");

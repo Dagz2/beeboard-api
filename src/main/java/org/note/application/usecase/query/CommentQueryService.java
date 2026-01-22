@@ -4,6 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.note.application.dto.query.CommentDto;
 import org.note.application.mapper.CommentMapper;
+import org.note.application.service.AuthorEnrichmentService;
 import org.note.domain.exception.NoteNotFoundException;
 import org.note.domain.model.*;
 import org.note.domain.port.ProjectAccessPort;
@@ -41,6 +42,9 @@ public class CommentQueryService {
     @Inject
     ProjectAccessPort projectAccessPort;
 
+    @Inject
+    AuthorEnrichmentService authorEnrichmentService;
+
     /**
      * Find a single comment by ID within a note.
      *
@@ -64,7 +68,8 @@ public class CommentQueryService {
 
         CommentId commentIdObj = new CommentId(commentId);
         return note.findComment(commentIdObj)
-            .map(CommentMapper::toDto);
+            .map(CommentMapper::toDto)
+            .map(authorEnrichmentService::enrichCommentDto);
     }
 
     /**
@@ -89,10 +94,11 @@ public class CommentQueryService {
 
         boolean isModerator = userContext.isSupervisor() || userContext.isModerator();
 
-        return note.getComments().stream()
+        List<CommentDto> commentDtos = note.getComments().stream()
             .filter(comment -> isModerator || comment.isVisible())  // Hide censored from regular users
             .map(CommentMapper::toDto)
             .collect(Collectors.toList());
+        return authorEnrichmentService.enrichCommentDtos(commentDtos);
     }
 
     /**
@@ -119,7 +125,7 @@ public class CommentQueryService {
         CommentId parentCommentIdObj = new CommentId(parentCommentId);
         boolean isModerator = userContext.isSupervisor() || userContext.isModerator();
 
-        return note.getComments().stream()
+        List<CommentDto> commentDtos = note.getComments().stream()
             .filter(comment -> isModerator || comment.isVisible())
             .filter(comment ->
                 comment.getId().equals(parentCommentIdObj) ||  // Parent itself
@@ -127,6 +133,7 @@ public class CommentQueryService {
                  comment.getParentCommentId().equals(parentCommentIdObj)))  // Replies
             .map(CommentMapper::toDto)
             .collect(Collectors.toList());
+        return authorEnrichmentService.enrichCommentDtos(commentDtos);
     }
 
     /**
@@ -149,11 +156,12 @@ public class CommentQueryService {
         // Validate user can view this note
         accessValidator.validateCanViewNote(note, userContext, projectAccessPort);
 
-        return note.getComments().stream()
+        List<CommentDto> commentDtos = note.getComments().stream()
             .filter(Comment::isProposedSolution)
             .filter(Comment::isVisible)  // Don't show censored proposed solutions
             .map(CommentMapper::toDto)
             .collect(Collectors.toList());
+        return authorEnrichmentService.enrichCommentDtos(commentDtos);
     }
 
     /**
@@ -177,6 +185,7 @@ public class CommentQueryService {
         accessValidator.validateCanViewNote(note, userContext, projectAccessPort);
 
         return note.getValidatedSolution()
-            .map(CommentMapper::toDto);
+            .map(CommentMapper::toDto)
+            .map(authorEnrichmentService::enrichCommentDto);
     }
 }

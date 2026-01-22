@@ -1,5 +1,7 @@
 package org.access.domain.model;
 
+import org.shared.domain.ApplicationRole;
+
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,23 +31,25 @@ public class Role {
     private final AuditInfo auditInfo;
     private SecurityTier tier;
     private boolean isSystem;
+    private ApplicationRole applicationRole;
 
     // -------------------- Creation --------------------
 
     /**
      * Constructs a new Role with full parameters.
      *
-     * @param id          the role's unique identifier
-     * @param code        the functional code of the role
-     * @param name        the business name of the role
-     * @param permissions initial set of permissions (optional)
-     * @param auditInfo   the audit information
-     * @param tier        the security tier classification
-     * @param isSystem    whether this is a system-protected role
+     * @param id              the role's unique identifier
+     * @param code            the functional code of the role
+     * @param name            the business name of the role
+     * @param permissions     initial set of permissions (optional)
+     * @param auditInfo       the audit information
+     * @param tier            the security tier classification
+     * @param isSystem        whether this is a system-protected role
+     * @param applicationRole the application-level role for cross-BC communication
      * @throws NullPointerException if required parameters are null
      */
     public Role(RoleId id, RoleCode code, RoleName name, Set<PermissionId> permissions,
-                AuditInfo auditInfo, SecurityTier tier, boolean isSystem) {
+                AuditInfo auditInfo, SecurityTier tier, boolean isSystem, ApplicationRole applicationRole) {
         this.id = Objects.requireNonNull(id, "Role ID cannot be null.");
         this.code = Objects.requireNonNull(code, "Role code cannot be null.");
         this.name = Objects.requireNonNull(name, "Role name cannot be null.");
@@ -55,6 +59,7 @@ public class Role {
         this.auditInfo = Objects.requireNonNull(auditInfo, "AuditInfo cannot be null.");
         this.tier = Objects.requireNonNull(tier, "Security tier cannot be null.");
         this.isSystem = isSystem;
+        this.applicationRole = Objects.requireNonNull(applicationRole, "ApplicationRole cannot be null.");
     }
 
     /**
@@ -62,27 +67,28 @@ public class Role {
      *
      * @param code the functional code of the role
      * @param name the business name of the role
-     * @return a new Role instance with default tier (TIER_2) and isSystem=false
+     * @return a new Role instance with default tier (TIER_2), isSystem=false, and ApplicationRole.MEMBER
      */
     public static Role create(RoleCode code, RoleName name) {
         Instant now = Instant.now();
         AuditInfo auditInfo = AuditInfo.of(now);
-        return new Role(RoleId.newId(), code, name, new HashSet<>(), auditInfo, SecurityTier.defaultTier(), false);
+        return new Role(RoleId.newId(), code, name, new HashSet<>(), auditInfo, SecurityTier.defaultTier(), false, ApplicationRole.MEMBER);
     }
 
     /**
-     * Factory method to create a new Role with explicit tier and system flag.
+     * Factory method to create a new Role with explicit tier, system flag, and application role.
      *
-     * @param code     the functional code of the role
-     * @param name     the business name of the role
-     * @param tier     the security tier classification
-     * @param isSystem whether this is a system-protected role
+     * @param code            the functional code of the role
+     * @param name            the business name of the role
+     * @param tier            the security tier classification
+     * @param isSystem        whether this is a system-protected role
+     * @param applicationRole the application-level role for cross-BC communication
      * @return a new Role instance
      */
-    public static Role create(RoleCode code, RoleName name, SecurityTier tier, boolean isSystem) {
+    public static Role create(RoleCode code, RoleName name, SecurityTier tier, boolean isSystem, ApplicationRole applicationRole) {
         Instant now = Instant.now();
         AuditInfo auditInfo = AuditInfo.of(now);
-        return new Role(RoleId.newId(), code, name, new HashSet<>(), auditInfo, tier, isSystem);
+        return new Role(RoleId.newId(), code, name, new HashSet<>(), auditInfo, tier, isSystem, applicationRole);
     }
 
     // -------------------- Domain methods --------------------
@@ -212,6 +218,26 @@ public class Role {
      */
     public boolean isSystem() {
         return isSystem;
+    }
+
+    /**
+     * Gets the application-level role for cross-BC communication.
+     *
+     * @return the ApplicationRole enum value
+     */
+    public ApplicationRole getApplicationRole() {
+        return applicationRole;
+    }
+
+    /**
+     * Sets the application-level role for cross-BC communication.
+     * Updates audit information when the role changes.
+     *
+     * @param applicationRole the new ApplicationRole (must not be null)
+     */
+    public void setApplicationRole(ApplicationRole applicationRole) {
+        this.applicationRole = Objects.requireNonNull(applicationRole, "ApplicationRole cannot be null.");
+        auditInfo.touch();
     }
 
     // -------------------- Overrides --------------------

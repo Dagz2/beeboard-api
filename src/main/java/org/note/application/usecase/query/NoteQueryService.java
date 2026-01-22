@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.note.application.dto.query.NoteDto;
 import org.note.application.mapper.NoteMapper;
+import org.note.application.service.AuthorEnrichmentService;
 import org.note.domain.model.*;
 import org.note.domain.repository.NoteRepository;
 
@@ -23,6 +24,9 @@ public class NoteQueryService {
     @Inject
     NoteRepository noteRepository;
 
+    @Inject
+    AuthorEnrichmentService authorEnrichmentService;
+
     /**
      * Finds a note by its ID.
      *
@@ -32,7 +36,8 @@ public class NoteQueryService {
     @Transactional
     public Optional<NoteDto> findById(UUID noteId) {
         return noteRepository.findById(new NoteId(noteId))
-                .map(NoteMapper::toDto);
+                .map(NoteMapper::toDto)
+                .map(authorEnrichmentService::enrichNoteDto);
     }
 
     /**
@@ -43,10 +48,11 @@ public class NoteQueryService {
      */
     @Transactional
     public List<NoteDto> findByAuthorId(UUID authorId) {
-        return noteRepository.findByAuthorId(new AuthorId(authorId))
+        List<NoteDto> noteDtos = noteRepository.findByAuthorId(new AuthorId(authorId))
                 .stream()
                 .map(NoteMapper::toDto)
                 .collect(Collectors.toList());
+        return authorEnrichmentService.enrichNoteDtos(noteDtos);
     }
 
     /**
@@ -58,10 +64,11 @@ public class NoteQueryService {
     @Transactional
     public List<NoteDto> findByCategory(String category) {
         NoteCategory noteCategory = NoteCategory.valueOf(category);
-        return noteRepository.findByCategory(noteCategory)
+        List<NoteDto> noteDtos = noteRepository.findByCategory(noteCategory)
                 .stream()
                 .map(NoteMapper::toDto)
                 .collect(Collectors.toList());
+        return authorEnrichmentService.enrichNoteDtos(noteDtos);
     }
 
     /**
@@ -73,10 +80,11 @@ public class NoteQueryService {
     @Transactional
     public List<NoteDto> findByVisibility(String visibility) {
         NoteVisibility noteVisibility = NoteVisibility.valueOf(visibility);
-        return noteRepository.findByVisibility(noteVisibility)
+        List<NoteDto> noteDtos = noteRepository.findByVisibility(noteVisibility)
                 .stream()
                 .map(NoteMapper::toDto)
                 .collect(Collectors.toList());
+        return authorEnrichmentService.enrichNoteDtos(noteDtos);
     }
 
     /**
@@ -87,10 +95,11 @@ public class NoteQueryService {
      */
     @Transactional
     public List<NoteDto> findByProjectId(UUID projectId) {
-        return noteRepository.findByProjectId(new ProjectId(projectId))
+        List<NoteDto> noteDtos = noteRepository.findByProjectId(new ProjectId(projectId))
                 .stream()
                 .map(NoteMapper::toDto)
                 .collect(Collectors.toList());
+        return authorEnrichmentService.enrichNoteDtos(noteDtos);
     }
 
     /**
@@ -101,10 +110,11 @@ public class NoteQueryService {
      */
     @Transactional
     public List<NoteDto> findByTagId(UUID tagId) {
-        return noteRepository.findByTagId(new TagId(tagId))
+        List<NoteDto> noteDtos = noteRepository.findByTagId(new TagId(tagId))
                 .stream()
                 .map(NoteMapper::toDto)
                 .collect(Collectors.toList());
+        return authorEnrichmentService.enrichNoteDtos(noteDtos);
     }
 
     /**
@@ -116,10 +126,11 @@ public class NoteQueryService {
     @Transactional
     public List<NoteDto> findByStatus(String status) {
         NoteStatus noteStatus = NoteStatus.valueOf(status);
-        return noteRepository.findByStatus(noteStatus)
+        List<NoteDto> noteDtos = noteRepository.findByStatus(noteStatus)
                 .stream()
                 .map(NoteMapper::toDto)
                 .collect(Collectors.toList());
+        return authorEnrichmentService.enrichNoteDtos(noteDtos);
     }
 
     /**
@@ -129,9 +140,43 @@ public class NoteQueryService {
      */
     @Transactional
     public List<NoteDto> findAllActive() {
-        return noteRepository.findAllActive()
+        List<NoteDto> noteDtos = noteRepository.findAllActive()
                 .stream()
                 .map(NoteMapper::toDto)
                 .collect(Collectors.toList());
+        return authorEnrichmentService.enrichNoteDtos(noteDtos);
+    }
+
+    /**
+     * Finds archived notes accessible to the current user.
+     *
+     * Access rules:
+     * - SUPERVISOR: Can see all archived notes (from any author)
+     * - Regular user: Can see only their own archived notes
+     *
+     * @param currentUserId the ID of the current authenticated user
+     * @param isSupervisor whether the user has SUPERVISOR role
+     * @return list of archived note DTOs accessible to the user
+     */
+    @Transactional
+    public List<NoteDto> findArchivedNotes(UUID currentUserId, boolean isSupervisor) {
+        // Get all archived notes from repository
+        List<Note> archivedNotes = noteRepository.findByStatus(NoteStatus.ARCHIVED);
+
+        // Filter based on user role
+        if (!isSupervisor) {
+            // Regular users: only see their own archived notes
+            archivedNotes = archivedNotes.stream()
+                    .filter(note -> note.getAuthorId().id().equals(currentUserId))
+                    .collect(Collectors.toList());
+        }
+        // SUPERVISOR: sees all archived notes (no filtering)
+
+        // Map to DTOs and enrich with author info
+        List<NoteDto> noteDtos = archivedNotes.stream()
+                .map(NoteMapper::toDto)
+                .collect(Collectors.toList());
+
+        return authorEnrichmentService.enrichNoteDtos(noteDtos);
     }
 }

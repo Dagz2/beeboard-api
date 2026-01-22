@@ -24,7 +24,7 @@ public class NoteAccessValidator {
      * - IF user is Recipient → ALLOW
      * - IF accessLevel == SUPERVISOR → ALLOW
      * - IF visibility == PRIVATE → DENY
-     * - IF visibility == SHARED → ALLOW if trustScope == TEAM_MEMBER
+     * - IF visibility == SHARED → ALLOW (all authenticated users)
      * - IF visibility == PROJECT → ALLOW if user is ProjectMember
      *
      * @param note the note to access
@@ -58,10 +58,8 @@ public class NoteAccessValidator {
                 throw UnauthorizedNoteAccessException.cannotViewNote();
 
             case SHARED:
-                // SHARED notes visible only to TEAM_MEMBER users
-                if (!userContext.isTeamMember()) {
-                    throw UnauthorizedNoteAccessException.cannotViewNote();
-                }
+                // SHARED notes visible to all authenticated users
+                // No additional check needed - if user has a valid context, they can view
                 break;
 
             case PROJECT:

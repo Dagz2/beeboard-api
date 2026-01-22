@@ -1,5 +1,7 @@
 package org.access.domain.model;
 
+import org.shared.domain.AccountStatus;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
@@ -103,12 +105,17 @@ public class User {
      * @param newEndDate the new contract end date value object (can't not be null)
      */
     public void extendContract(ContractEndDate newEndDate) {
-        this.contractEndDate = Objects.requireNonNull(newEndDate, "New contract end date cannot be null.");
-        //The new date must be after the old one
+        Objects.requireNonNull(newEndDate, "New contract end date cannot be null.");
+
+        // Validate that new date is after current date BEFORE assigning
         if (!newEndDate.isAfter(this.contractEndDate)) {
-        throw new IllegalArgumentException(String.format(
-            "New contract end date (%s) must be after the current one (%s).", newEndDate.date(), this.contractEndDate.date()));
+            throw new IllegalArgumentException(String.format(
+                "New contract end date (%s) must be after the current one (%s).",
+                newEndDate.date(), this.contractEndDate.date()));
         }
+
+        // Only assign if validation passed
+        this.contractEndDate = newEndDate;
         auditInfo.touch();
     }
 
@@ -184,6 +191,24 @@ public class User {
      */
     public boolean isContractExpired() {
         return LocalDate.now().isAfter(contractEndDate.date());
+    }
+
+    /**
+     * Calculates the current account status based on lock state and contract.
+     * This is a derived property, not stored in the database.
+     *
+     * Priority: locked > expired > active
+     *
+     * @return Current AccountStatus
+     */
+    public AccountStatus getAccountStatus() {
+        if (isLocked) {
+            return AccountStatus.LOCKED;
+        }
+        if (isContractExpired()) {
+            return AccountStatus.EXPIRED;
+        }
+        return AccountStatus.ACTIVE;
     }
 
     // -------------------- Getters -------------------- 

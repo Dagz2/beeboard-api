@@ -13,8 +13,7 @@ import java.util.UUID;
  *
  * <p><strong>Responsibility:</strong> This record is the single entry point for user authentication
  * and authorization context into the Note domain. All external concepts from the Access BC
- * ({@code ApplicationRole}, {@code AuthType}) are translated here into Note BC vocabulary
- * ({@link AccessLevel}, {@link TrustScope}).
+ * ({@code ApplicationRole}) are translated here into Note BC vocabulary ({@link AccessLevel}).
  *
  * <p><strong>Translation Rules:</strong>
  * <ul>
@@ -26,12 +25,6 @@ import java.util.UUID;
  *       <li>GUEST → VIEWER (read-only)</li>
  *     </ul>
  *   </li>
- *   <li>AuthType → TrustScope:
- *     <ul>
- *       <li>INTERNAL → TEAM_MEMBER (trusted organization member)</li>
- *       <li>EXTERNAL → RESTRICTED_USER (limited trust guest)</li>
- *     </ul>
- *   </li>
  * </ul>
  *
  * <p><strong>Usage Pattern:</strong>
@@ -39,8 +32,7 @@ import java.util.UUID;
  * // At the exposition layer (REST controller)
  * NoteUserContext context = NoteUserContext.from(
  *     securityContext.getUserId(),
- *     securityContext.getRole(),      // "MEMBER"
- *     securityContext.getAuthType()   // "INTERNAL"
+ *     securityContext.getRole()      // "MEMBER"
  * );
  *
  * // Pass to domain layer
@@ -57,8 +49,7 @@ import java.util.UUID;
  */
 public record NoteUserContext(
         UUID userId,
-        AccessLevel accessLevel,
-        TrustScope trustScope
+        AccessLevel accessLevel
 ) {
 
     // -------------------- Creation --------------------
@@ -66,18 +57,16 @@ public record NoteUserContext(
     /**
      * Canonical record constructor with validation.
      *
-     * <p>This constructor is typically not called directly. Use the {@link #from(UUID, String, String)}
+     * <p>This constructor is typically not called directly. Use the {@link #from(UUID, String)}
      * factory method instead, which handles translation from external vocabulary.
      *
      * @param userId the user's unique identifier (must not be null)
      * @param accessLevel the user's access level in Note BC vocabulary (must not be null)
-     * @param trustScope the user's trust scope in Note BC vocabulary (must not be null)
      * @throws NullPointerException if any parameter is null
      */
     public NoteUserContext {
         Objects.requireNonNull(userId, "User ID is required");
         Objects.requireNonNull(accessLevel, "Access level is required");
-        Objects.requireNonNull(trustScope, "Trust scope is required");
     }
 
     /**
@@ -90,26 +79,22 @@ public record NoteUserContext(
      * <p><strong>Translation performed:</strong>
      * <ul>
      *   <li>{@code externalRole} (ApplicationRole) → {@link AccessLevel} via {@link #translateRole(String)}</li>
-     *   <li>{@code externalAuthType} (AuthType) → {@link TrustScope} via {@link #translateAuthType(String)}</li>
      * </ul>
      *
-     * <p>Unknown or null external values are defaulted to the most restrictive permissions:
+     * <p>Unknown or null external role is defaulted to the most restrictive permission:
      * <ul>
      *   <li>Unknown role → VIEWER (read-only access)</li>
-     *   <li>Unknown auth type → RESTRICTED_USER (limited trust)</li>
      * </ul>
      *
      * @param userId the user's unique identifier (must not be null)
      * @param externalRole the external ApplicationRole name from Access BC (e.g., "ADMIN", "MEMBER", "GUEST")
-     * @param externalAuthType the external AuthType name from Access BC (e.g., "INTERNAL", "EXTERNAL")
      * @return a new NoteUserContext with translated values
      * @throws NullPointerException if userId is null
      */
-    public static NoteUserContext from(UUID userId, String externalRole, String externalAuthType) {
+    public static NoteUserContext from(UUID userId, String externalRole) {
         Objects.requireNonNull(userId, "User ID is required");
         AccessLevel level = translateRole(externalRole);
-        TrustScope scope = translateAuthType(externalAuthType);
-        return new NoteUserContext(userId, level, scope);
+        return new NoteUserContext(userId, level);
     }
 
     // -------------------- Translation methods --------------------
@@ -144,33 +129,6 @@ public record NoteUserContext(
         };
     }
 
-    /**
-     * Translates external AuthType to Note BC's TrustScope vocabulary.
-     *
-     * <p><strong>Translation mapping:</strong>
-     * <ul>
-     *   <li>"INTERNAL" → TEAM_MEMBER (trusted organization member, can access SHARED notes)</li>
-     *   <li>"EXTERNAL" → RESTRICTED_USER (guest user, needs explicit sharing)</li>
-     *   <li>null or unknown → RESTRICTED_USER (fail-safe to most restrictive)</li>
-     * </ul>
-     *
-     * <p>Trust scope determines default access rights:
-     * <ul>
-     *   <li>TEAM_MEMBER: Can see SHARED visibility notes by default</li>
-     *   <li>RESTRICTED_USER: Only sees content explicitly shared with them</li>
-     * </ul>
-     *
-     * @param authType the external AuthType name (can be null)
-     * @return the translated TrustScope (never null, defaults to RESTRICTED_USER)
-     */
-    private static TrustScope translateAuthType(String authType) {
-        if (authType == null) {
-            return TrustScope.RESTRICTED_USER;
-        }
-        return "INTERNAL".equalsIgnoreCase(authType)
-                ? TrustScope.TEAM_MEMBER
-                : TrustScope.RESTRICTED_USER;
-    }
 
     // -------------------- Query methods --------------------
 
@@ -209,18 +167,6 @@ public record NoteUserContext(
         return accessLevel == AccessLevel.SUPERVISOR || accessLevel == AccessLevel.MODERATOR;
     }
 
-    /**
-     * Checks if the user is a trusted team member (internal user).
-     *
-     * <p>Team members have default access to SHARED visibility notes without
-     * requiring explicit sharing. This represents trusted employees or organization
-     * members.
-     *
-     * @return true if trust scope is TEAM_MEMBER, false if RESTRICTED_USER
-     */
-    public boolean isTeamMember() {
-        return trustScope == TrustScope.TEAM_MEMBER;
-    }
 
     /**
      * Checks if the user has permission to add comments to notes.
@@ -251,12 +197,12 @@ public record NoteUserContext(
     /**
      * Returns a string representation of this NoteUserContext for debugging purposes.
      *
-     * <p>Format: {@code NoteUserContext{userId=..., accessLevel=..., trustScope=...}}
+     * <p>Format: {@code NoteUserContext{userId=..., accessLevel=...}}
      *
-     * @return a string representation containing userId, access level, and trust scope
+     * @return a string representation containing userId and access level
      */
     @Override
     public String toString() {
-        return "NoteUserContext{userId=" + userId + ", accessLevel=" + accessLevel + ", trustScope=" + trustScope + "}";
+        return "NoteUserContext{userId=" + userId + ", accessLevel=" + accessLevel + "}";
     }
 }

@@ -13,6 +13,7 @@ import org.access.application.dto.command.user.UnlockUserCommand;
 import org.access.application.dto.command.role.CreateRoleCommand;
 import org.access.application.dto.command.role.DeleteRoleCommand;
 import org.access.application.dto.command.role.UpdateRoleCommand;
+import org.access.application.dto.command.role.UpdateRoleApplicationRoleCommand;
 import org.access.application.dto.command.permission.CreatePermissionCommand;
 import org.access.application.dto.command.permission.DeletePermissionCommand;
 import org.access.application.dto.command.permission.UpdatePermissionCommand;
@@ -90,6 +91,8 @@ public class AccessRessource {
     CreateRole createRole;
     @Inject
     UpdateRole updateRole;
+    @Inject
+    UpdateRoleApplicationRole updateRoleApplicationRole;
     @Inject
     DeleteRole deleteRole;
     @Inject
@@ -460,7 +463,7 @@ public class AccessRessource {
     public Response changeFullName(@PathParam("userId") UUID userId, @Valid ChangeFullNameCommand cmd) {
         Log.info("Request received: PUT /users/" + userId + "/name - Changing user full name");
         try {
-            changeFullName.execute(cmd);
+            changeFullName.execute(cmd, securityContextService.getCurrentContext());
             Log.info("Request successful: PUT /users/" + userId + "/name - Full name changed successfully");
             return Response.ok().build();
         } catch (Exception e) {
@@ -973,8 +976,11 @@ public class AccessRessource {
                 name = "Create Role Example",
                 value = """
                 {
-                    "code": "MANAGER",
-                    "name": "Project Manager"
+                    "code": "TEAM_LEAD",
+                    "name": "Team Lead",
+                    "tier": "TIER_2",
+                    "isSystem": false,
+                    "applicationRole": "MANAGER"
                 }
                 """
             )
@@ -1042,6 +1048,67 @@ public class AccessRessource {
             return Response.ok().build();
         } catch (Exception e) {
             Log.error("Request failed: PUT /roles/" + roleId + " - " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Updates a role's ApplicationRole.
+     *
+     * Modifies the role's ApplicationRole which is used for cross-BC
+     * communication and coarse-grained authorization. This operation
+     * can only be performed by SUPER_ADMIN (TIER_0) users.
+     *
+     * @param roleId the unique identifier of the role to update
+     * @param cmd validated ApplicationRole update data
+     * @return HTTP 204 No Content when the ApplicationRole is successfully updated
+     */
+    @PUT
+    @Path("/roles/{roleId}/application-role")
+    @RequiresPermission("MANAGE_SYSTEM_ROLES")
+    @Operation(
+        summary = "Update role's ApplicationRole",
+        description = "Updates the ApplicationRole of an existing role. Only SUPER_ADMIN can perform this operation. **Required permission: MANAGE_SYSTEM_ROLES**"
+    )
+    @APIResponse(
+        responseCode = "204",
+        description = "ApplicationRole updated successfully"
+    )
+    @APIResponse(
+        responseCode = "404",
+        description = "Role not found"
+    )
+    @APIResponse(
+        responseCode = "403",
+        description = "Insufficient permissions (requires MANAGE_SYSTEM_ROLES)"
+    )
+    @RequestBody(
+        description = "New ApplicationRole value",
+        required = true,
+        content = @Content(
+            mediaType = "application/json",
+            examples = @ExampleObject(
+                name = "Update ApplicationRole Example",
+                value = """
+                {
+                    "roleId": "550e8400-e29b-41d4-a716-446655440000",
+                    "newApplicationRole": "MANAGER"
+                }
+                """
+            )
+        )
+    )
+    public Response updateRoleApplicationRole(@PathParam("roleId") UUID roleId, @Valid UpdateRoleApplicationRoleCommand cmd) {
+        Log.info("Request received: PUT /roles/" + roleId + "/application-role - Updating ApplicationRole to: " + cmd.newApplicationRole());
+        try {
+            updateRoleApplicationRole.execute(cmd, securityContextService.getCurrentContext());
+            Log.info("Request successful: PUT /roles/" + roleId + "/application-role - ApplicationRole updated successfully to: " + cmd.newApplicationRole());
+            return Response.noContent().build();
+        } catch (UpdateRoleApplicationRole.RoleNotFoundException e) {
+            Log.warn("Request failed: PUT /roles/" + roleId + "/application-role - Role not found");
+            return Response.status(Response.Status.NOT_FOUND).build();
+        } catch (Exception e) {
+            Log.error("Request failed: PUT /roles/" + roleId + "/application-role - " + e.getMessage());
             throw e;
         }
     }

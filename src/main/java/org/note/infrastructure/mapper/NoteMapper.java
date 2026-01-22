@@ -2,14 +2,10 @@ package org.note.infrastructure.mapper;
 
 import org.note.domain.model.*;
 import org.note.infrastructure.entity.AuditInfoEmbeddable;
-import org.note.infrastructure.entity.CommentEmbeddable;
 import org.note.infrastructure.entity.NoteEntity;
 import org.note.infrastructure.entity.RecipientEmbeddable;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -23,24 +19,25 @@ public class NoteMapper {
 
     /**
      * Converts a NoteEntity to a Note domain object.
+     * Tags and recipients are loaded separately by the repository and passed as parameters.
      */
-    public static Note toDomain(NoteEntity entity) {
+    public static Note toDomain(NoteEntity entity, Set<UUID> tagIds, Set<RecipientEmbeddable> recipients) {
         Objects.requireNonNull(entity, "NoteEntity cannot be null");
+        Objects.requireNonNull(tagIds, "tagIds cannot be null");
+        Objects.requireNonNull(recipients, "recipients cannot be null");
 
         // Convert tag IDs
-        Set<TagId> tagIds = entity.getTagIds().stream()
+        Set<TagId> convertedTagIds = tagIds.stream()
                 .map(TagId::new)
                 .collect(Collectors.toSet());
 
         // Convert recipients
-        Set<Recipient> recipients = entity.getRecipients().stream()
+        Set<Recipient> convertedRecipients = recipients.stream()
                 .map(RecipientMapper::toDomain)
                 .collect(Collectors.toSet());
 
-        // Convert comments
-        List<Comment> comments = entity.getComments().stream()
-                .map(CommentMapper::toDomain)
-                .collect(Collectors.toList());
+        // Comments are loaded separately by the repository
+        List<Comment> comments = new ArrayList<>();
 
         return Note.reconstitute(
                 new NoteId(entity.getNoteId()),
@@ -51,8 +48,8 @@ public class NoteMapper {
                 NoteStatus.valueOf(entity.getStatus()),
                 new AuthorId(entity.getAuthorId()),
                 entity.getProjectId() != null ? new ProjectId(entity.getProjectId()) : null,
-                tagIds,
-                recipients,
+                convertedTagIds,
+                convertedRecipients,
                 comments,
                 new AuditInfo(
                         entity.getAuditInfo().getCreatedAt(),
@@ -79,23 +76,7 @@ public class NoteMapper {
         entity.setAuthorId(note.getAuthorId().id());
         entity.setProjectId(note.getProjectId() != null ? note.getProjectId().id() : null);
 
-        // Convert tag IDs
-        Set<java.util.UUID> tagIds = note.getTagIds().stream()
-                .map(TagId::id)
-                .collect(Collectors.toSet());
-        entity.setTagIds(tagIds);
-
-        // Convert recipients
-        Set<RecipientEmbeddable> recipients = note.getRecipients().stream()
-                .map(RecipientMapper::toEmbeddable)
-                .collect(Collectors.toSet());
-        entity.setRecipients(recipients);
-
-        // Convert comments
-        List<CommentEmbeddable> comments = note.getComments().stream()
-                .map(CommentMapper::toEmbeddable)
-                .collect(Collectors.toList());
-        entity.setComments(comments);
+        // Tags, recipients, and comments are persisted separately by the repository
 
         AuditInfoEmbeddable auditInfo = new AuditInfoEmbeddable(
                 note.getAuditInfo().getCreatedAt(),

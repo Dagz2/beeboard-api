@@ -85,7 +85,8 @@ class RoleRepositoryIT {
                 role.permissions(),
                 role.auditInfo(),
                 role.tier(),
-                role.isSystem()
+                role.isSystem(),
+                role.getApplicationRole()
             );
             roleRepository.update(updated);
 

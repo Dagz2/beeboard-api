@@ -8,6 +8,7 @@ import java.util.UUID;
 public class CommentDto {
     private UUID id;
     private UUID authorId;
+    private AuthorDto author;
     private String content;
     private UUID parentCommentId;
     private String solutionStatus;
@@ -18,9 +19,10 @@ public class CommentDto {
     }
 
     public CommentDto(UUID id, UUID authorId, String content, UUID parentCommentId,
-                      String solutionStatus, String moderationStatus, AuditInfoDto auditInfo) {
+                      String solutionStatus, String moderationStatus, AuditInfoDto auditInfo, AuthorDto author) {
         this.id = id;
         this.authorId = authorId;
+        this.author = author;
         this.content = content;
         this.parentCommentId = parentCommentId;
         this.solutionStatus = solutionStatus;
@@ -42,6 +44,14 @@ public class CommentDto {
 
     public void setAuthorId(UUID authorId) {
         this.authorId = authorId;
+    }
+
+    public AuthorDto getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(AuthorDto author) {
+        this.author = author;
     }
 
     public String getContent() {

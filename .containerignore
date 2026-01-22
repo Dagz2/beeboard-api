@@ -1,0 +1,62 @@
+# Containerfile ignore file (compatible Podman/Buildah/Docker)
+# Exclut les fichiers inutiles de l'image pour réduire sa taille
+
+# Répertoires de build
+target/
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+documentation/
+*.md
+!CHANGELOG.md
+
+# Fichiers de configuration locaux
+.env
+.env.local
+*.local.properties
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+Jenkinsfile
+
+# OpenShift/Kubernetes configs
+openshift/
+k8s/
+*.yaml
+*.yml
+
+# Tests
+src/test/
+**/test-output/
+
+# Conteneurs
+Containerfile
+Dockerfile
+docker-compose.yml
+.dockerignore
+.containerignore

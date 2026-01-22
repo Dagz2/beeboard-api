@@ -40,11 +40,14 @@ class LockUserTest {
     @Mock
     AuditService auditService;
 
+    @Mock
+    org.shared.event.EventPublisher eventPublisher;
+
     LockUser useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new LockUser(userRepository, roleRepository, privilegeGuard, auditService);
+        useCase = new LockUser(userRepository, roleRepository, privilegeGuard, auditService, eventPublisher);
     }
 
     @Nested

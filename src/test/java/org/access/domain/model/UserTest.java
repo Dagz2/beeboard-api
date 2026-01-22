@@ -262,6 +262,58 @@ class UserTest {
             assertThat(user.getContractEndDate().date()).isEqualTo(LocalDate.now());
             assertThat(user.isLocked()).isTrue();
         }
+
+        @Test
+        @DisplayName("should extend contract when new date is after current date")
+        void shouldExtendContractWhenNewDateIsAfterCurrentDate() {
+            LocalDate currentEndDate = LocalDate.of(2026, 6, 30);
+            User user = aUser().withContractEndDate(currentEndDate).build();
+
+            LocalDate newEndDate = LocalDate.of(2026, 12, 31);
+            ContractEndDate newContractEnd = contractEndDateOf(newEndDate);
+
+            user.extendContract(newContractEnd);
+
+            assertThat(user.getContractEndDate().date()).isEqualTo(newEndDate);
+        }
+
+        @Test
+        @DisplayName("should throw exception when extending to same date")
+        void shouldThrowExceptionWhenExtendingToSameDate() {
+            LocalDate currentEndDate = LocalDate.of(2026, 12, 31);
+            User user = aUser().withContractEndDate(currentEndDate).build();
+
+            ContractEndDate sameDate = contractEndDateOf(currentEndDate);
+
+            assertThatThrownBy(() -> user.extendContract(sameDate))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must be after the current one")
+                .hasMessageContaining("2026-12-31");
+        }
+
+        @Test
+        @DisplayName("should throw exception when extending to earlier date")
+        void shouldThrowExceptionWhenExtendingToEarlierDate() {
+            LocalDate currentEndDate = LocalDate.of(2026, 12, 31);
+            User user = aUser().withContractEndDate(currentEndDate).build();
+
+            LocalDate newEndDate = LocalDate.of(2026, 6, 30);
+            ContractEndDate newContractEnd = contractEndDateOf(newEndDate);
+
+            assertThatThrownBy(() -> user.extendContract(newContractEnd))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must be after the current one");
+        }
+
+        @Test
+        @DisplayName("should throw exception when extending with null date")
+        void shouldThrowExceptionWhenExtendingWithNullDate() {
+            User user = aUser().build();
+
+            assertThatThrownBy(() -> user.extendContract(null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("New contract end date cannot be null.");
+        }
     }
 
     @Nested

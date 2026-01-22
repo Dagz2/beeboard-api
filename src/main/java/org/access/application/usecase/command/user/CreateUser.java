@@ -2,10 +2,12 @@ package org.access.application.usecase.command.user;
 
 import org.access.application.dto.command.user.CreateUserCommand;
 import org.access.application.service.AuditService;
+import org.access.domain.event.UserCreatedEvent;
 import org.access.domain.model.*;
 import org.access.domain.repository.UserRepository;
 import org.access.domain.repository.RoleRepository;
 import org.access.domain.service.PrivilegeEscalationGuard;
+import org.shared.event.EventPublisher;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -30,6 +32,7 @@ public class CreateUser {
     private final RoleRepository roleRepository;
     private final PrivilegeEscalationGuard privilegeGuard;
     private final AuditService auditService;
+    private final EventPublisher eventPublisher;
 
     /**
      * Constructs the use case with the required dependencies.
@@ -38,14 +41,17 @@ public class CreateUser {
      * @param roleRepository the repository used to verify role existence and tier
      * @param privilegeGuard the guard for privilege escalation protection
      * @param auditService   the service for audit logging
+     * @param eventPublisher the publisher for domain events
      */
     @Inject
     public CreateUser(UserRepository userRepository, RoleRepository roleRepository,
-                      PrivilegeEscalationGuard privilegeGuard, AuditService auditService) {
+                      PrivilegeEscalationGuard privilegeGuard, AuditService auditService,
+                      EventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.privilegeGuard = privilegeGuard;
         this.auditService = auditService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -78,6 +84,17 @@ public class CreateUser {
 
         // Persist user
         userRepository.save(user);
+
+        // Publish UserCreatedEvent for cross-BC synchronization (e.g., Note BC author_view)
+        eventPublisher.publishAsync(new UserCreatedEvent(
+            null,  // eventId auto-generated
+            user.getId().id(),
+            user.getFullName().toString(),
+            targetRole.getApplicationRole(),
+            user.getAccountStatus(),
+            securityContext.actorId().id(),
+            null   // occurredAt auto-generated
+        ));
 
         // Audit the operation
         auditService.record(securityContext, "CREATE_USER", "USER", user.getId().id().toString());

@@ -1,6 +1,7 @@
 package org.access.support;
 
 import org.access.domain.model.*;
+import org.shared.domain.ApplicationRole;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -222,6 +223,7 @@ public final class TestFixtures {
         private AuditInfo auditInfo = newAuditInfo();
         private SecurityTier tier = SecurityTier.TIER_2;
         private boolean isSystem = false;
+        private ApplicationRole applicationRole = ApplicationRole.MEMBER;
 
         public RoleBuilder withId(RoleId id) {
             this.id = id;
@@ -253,6 +255,11 @@ public final class TestFixtures {
             return this;
         }
 
+        public RoleBuilder withApplicationRole(ApplicationRole applicationRole) {
+            this.applicationRole = applicationRole;
+            return this;
+        }
+
         public RoleBuilder asSystem() {
             this.isSystem = true;
             return this;
@@ -268,6 +275,7 @@ public final class TestFixtures {
             this.name = new RoleName("Super Administrator");
             this.tier = SecurityTier.TIER_0;
             this.isSystem = true;
+            this.applicationRole = ApplicationRole.ADMIN;
             return this;
         }
 
@@ -276,6 +284,7 @@ public final class TestFixtures {
             this.name = new RoleName("Director");
             this.tier = SecurityTier.TIER_1;
             this.isSystem = true;
+            this.applicationRole = ApplicationRole.SUPERVISOR;
             return this;
         }
 
@@ -284,11 +293,12 @@ public final class TestFixtures {
             this.name = new RoleName("HR Manager");
             this.tier = SecurityTier.TIER_2;
             this.isSystem = true;
+            this.applicationRole = ApplicationRole.MANAGER;
             return this;
         }
 
         public Role build() {
-            return new Role(id, code, name, permissions, auditInfo, tier, isSystem);
+            return new Role(id, code, name, permissions, auditInfo, tier, isSystem, applicationRole);
         }
     }
 

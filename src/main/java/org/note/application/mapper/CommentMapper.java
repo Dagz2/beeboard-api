@@ -31,7 +31,8 @@ public class CommentMapper {
                 new AuditInfoDto(
                         comment.getAuditInfo().getCreatedAt(),
                         comment.getAuditInfo().getUpdatedAt()
-                )
+                ),
+                null  // author will be enriched later by AuthorEnrichmentService
         );
     }
 }

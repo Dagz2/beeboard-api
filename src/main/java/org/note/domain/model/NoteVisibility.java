@@ -10,13 +10,13 @@ package org.note.domain.model;
  * <ol>
  *   <li>PRIVATE: Only the note author</li>
  *   <li>PROJECT: Only project members</li>
- *   <li>SHARED: All team members in the organization</li>
+ *   <li>SHARED: All authenticated users in the organization</li>
  * </ol>
  *
  * <p>Business rules:
  * <ul>
  *   <li>PRIVATE notes are only visible to their author</li>
- *   <li>SHARED notes are visible to all users with TEAM_MEMBER trust scope</li>
+ *   <li>SHARED notes are visible to all authenticated users</li>
  *   <li>PROJECT notes require a projectId and are visible to project contributors</li>
  * </ul>
  */
@@ -29,7 +29,7 @@ public enum NoteVisibility {
     PRIVATE,
 
     /**
-     * Shared visibility - all team members can view this note.
+     * Shared visibility - all authenticated users can view this note.
      * Used for organization-wide shared knowledge and collaboration.
      */
     SHARED,

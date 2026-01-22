@@ -3,6 +3,7 @@ package org.access.domain.model;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.shared.domain.ApplicationRole;
 
 import static org.access.support.TestFixtures.*;
 import static org.assertj.core.api.Assertions.*;
@@ -37,7 +38,7 @@ class RoleTest {
             RoleCode code = roleCodeOf("ADMIN_ROLE");
             RoleName name = roleNameOf("Admin Role");
 
-            Role role = Role.create(code, name, SecurityTier.TIER_1, true);
+            Role role = Role.create(code, name, SecurityTier.TIER_1, true, ApplicationRole.SUPERVISOR);
 
             assertThat(role.tier()).isEqualTo(SecurityTier.TIER_1);
             assertThat(role.isSystem()).isTrue();

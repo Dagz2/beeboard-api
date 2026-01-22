@@ -1,103 +1,138 @@
-# deployment.yaml - Configuration de déploiement pour mock-bank
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mock-bank-api                   # Nom du déploiement
+  name: beeboard-api
+  namespace: beeboard
   labels:
-    app: mock-bank                      # Label principal de votre app
-    component: api
-    version: v1
+    app.kubernetes.io/name: beeboard-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: beeboard-api
+    app.kubernetes.io/version: "1.0.0"
 spec:
-  replicas: 2                          # 2 instances pour la haute disponibilité
+  replicas: 1
   selector:
     matchLabels:
-      app: mock-bank
-      component: api
+      app: beeboard-api
   template:
     metadata:
       labels:
-        app: mock-bank
-        component: api
-        version: v1
+        app: beeboard-api
+        app.kubernetes.io/name: beeboard-api
+        app.kubernetes.io/component: backend
     spec:
+      # Init container to wait for PostgreSQL to be ready
+      initContainers:
+        - name: wait-for-db
+          image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL to be ready..."
+              until nc -z postgresql 5432; do
+                echo "PostgreSQL is not ready yet. Retrying in 5 seconds..."
+                sleep 5
+              done
+              echo "PostgreSQL is ready!"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+
       containers:
-      - name: mock-bank-api
-        # 🚨 IMPORTANT : Remplacez par l'URL de votre image mock-bank
-        image: your-registry/mock-bank:latest
-        
-        ports:
-        - containerPort: 8080
-          name: http
-          protocol: TCP
-          
-        env:
-        # Variables d'environnement spécifiques à mock-bank
-        - name: JAVA_OPTIONS
-          value: "-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
-        - name: QUARKUS_PROFILE
-          value: "prod"
-        # Variables métier pour mock-bank
-        - name: BANK_NAME
-          value: "Mock Bank API"
-        - name: BANK_VERSION
-          value: "1.0.0"
-        - name: ENVIRONMENT
-          value: "production"
-        # 💡 Ajoutez vos variables spécifiques :
-        # - name: DATABASE_URL
-        #   value: "jdbc:postgresql://postgresql:5432/mockbank"
-        # - name: EXTERNAL_BANK_API_URL
-        #   value: "https://api.external-bank.com"
-        
-        resources:
-          limits:
-            cpu: 1000m              # 1 CPU pour une API bancaire (plus de charge)
-            memory: 768Mi           # 768 MB pour mock-bank
-          requests:
-            cpu: 500m               # 0.5 CPU minimum
-            memory: 384Mi           # 384 MB minimum
-            
-        # Health checks essentiels pour une API bancaire
-        livenessProbe:
-          httpGet:
-            path: /q/health/live
-            port: 8080
-            scheme: HTTP
-          initialDelaySeconds: 45    # Plus de temps pour démarrer (API complexe)
-          timeoutSeconds: 5
-          periodSeconds: 10
-          successThreshold: 1
-          failureThreshold: 3
-          
-        readinessProbe:
-          httpGet:
-            path: /q/health/ready
-            port: 8080
-            scheme: HTTP
-          initialDelaySeconds: 10
-          timeoutSeconds: 5
-          periodSeconds: 5
-          successThreshold: 1
-          failureThreshold: 3
-          
-        imagePullPolicy: Always
-        
-        # Configuration externalisée
-        volumeMounts:
-        - name: config-volume
-          mountPath: /deployments/config/application.properties
-          subPath: application.properties
-        # Si vous avez des certificats pour l'API bancaire
-        # - name: certs-volume
-        #   mountPath: /deployments/certs
-          
-      volumes:
-      - name: config-volume
-        configMap:
-          name: mock-bank-config
-      # - name: certs-volume
-      #   secret:
-      #     secretName: mock-bank-certs
-          
+        - name: beeboard-api
+          # IMPORTANT: Replace with your actual image from registry
+          # Example: image: quay.io/your-org/beeboard-api:1.0.0
+          image: beeboard-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+
+          # Environment variables from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: beeboard-api-config
+            - secretRef:
+                name: beeboard-api-secrets
+
+          # Health probes using Quarkus endpoints
+          startupProbe:
+            httpGet:
+              path: /q/health/started
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30  # 30 attempts × 5s = 150s max startup time
+            successThreshold: 1
+
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 0  # Startup probe handles initial delay
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 0  # Startup probe handles initial delay
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+
+          # Resource limits and requests
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 2
+              memory: 2Gi
+
+          # Security context
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 185  # Non-root user from Containerfile
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+
+          # Volume mounts (if needed for JWT keys, etc.)
+          # For now, keys are passed via environment variables from secrets
+          volumeMounts: []
+
+      # Volumes (if needed)
+      volumes: []
+
+      # Pod security context
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 185
+        seccompProfile:
+          type: RuntimeDefault
+
+      # Restart policy
       restartPolicy: Always
+
+      # DNS policy
+      dnsPolicy: ClusterFirst
+
+      # Termination grace period
       terminationGracePeriodSeconds: 30

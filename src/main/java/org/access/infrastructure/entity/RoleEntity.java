@@ -7,6 +7,7 @@ import java.util.UUID;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.validation.constraints.NotNull;
 import jakarta.persistence.*;
+import org.shared.domain.ApplicationRole;
 
 /**
  * JPA entity representing a role in the system.
@@ -77,6 +78,15 @@ public class RoleEntity extends PanacheEntityBase {
     @Column(name = "is_system", nullable = false)
     private boolean isSystem;
 
+    /**
+     * Application-level role for cross-BC communication.
+     * Maps organizational roles to capability levels.
+     */
+    @NotNull
+    @Column(name = "application_role", length = 20, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ApplicationRole applicationRole;
+
     // -------------------- Getters & Setters --------------------
 
     public UUID getRoleId() {
@@ -134,5 +144,13 @@ public class RoleEntity extends PanacheEntityBase {
 
     public void setSystem(boolean system) {
         isSystem = system;
+    }
+
+    public ApplicationRole getApplicationRole() {
+        return applicationRole;
+    }
+
+    public void setApplicationRole(ApplicationRole applicationRole) {
+        this.applicationRole = applicationRole;
     }
 }

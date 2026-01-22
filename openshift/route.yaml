@@ -1,0 +1,27 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: beeboard-api
+  namespace: beeboard
+  labels:
+    app.kubernetes.io/name: beeboard-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: beeboard-api
+  annotations:
+    description: "External HTTPS access to BeeBoard API"
+spec:
+  # OpenShift will automatically assign a hostname
+  # Format: <route-name>-<namespace>.<cluster-domain>
+  # You can override with: host: api.beeboard.example.com
+  to:
+    kind: Service
+    name: beeboard-api
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    # Edge termination: TLS terminates at the router, traffic to pod is HTTP
+    termination: edge
+    # Redirect HTTP to HTTPS
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

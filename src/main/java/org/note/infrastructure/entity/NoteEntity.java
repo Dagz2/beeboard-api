@@ -3,15 +3,13 @@ package org.note.infrastructure.entity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.UUID;
 
 /**
  * JPA entity for Note aggregate.
- * Contains embedded collections for comments, tags, and recipients.
+ * Tags, recipients, and comments are stored in separate tables with CASCADE DELETE.
  */
 @Entity
 @Table(name = "note")
@@ -52,20 +50,8 @@ public class NoteEntity extends PanacheEntityBase {
     @Column(name = "project_id")
     private UUID projectId;
 
-    // Store tag IDs as JSONB array
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "tag_ids", columnDefinition = "jsonb")
-    private Set<UUID> tagIds = new HashSet<>();
-
-    // Store recipients as JSONB
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "recipients", columnDefinition = "jsonb")
-    private Set<RecipientEmbeddable> recipients = new HashSet<>();
-
-    // Store comments as JSONB
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "comments", columnDefinition = "jsonb")
-    private List<CommentEmbeddable> comments = new ArrayList<>();
+    // Tags and recipients are now stored in separate tables (note_tag, note_recipient)
+    // and loaded separately by the repository
 
     @Embedded
     @NotNull
@@ -147,30 +133,6 @@ public class NoteEntity extends PanacheEntityBase {
 
     public void setProjectId(UUID projectId) {
         this.projectId = projectId;
-    }
-
-    public Set<UUID> getTagIds() {
-        return tagIds;
-    }
-
-    public void setTagIds(Set<UUID> tagIds) {
-        this.tagIds = tagIds;
-    }
-
-    public Set<RecipientEmbeddable> getRecipients() {
-        return recipients;
-    }
-
-    public void setRecipients(Set<RecipientEmbeddable> recipients) {
-        this.recipients = recipients;
-    }
-
-    public List<CommentEmbeddable> getComments() {
-        return comments;
-    }
-
-    public void setComments(List<CommentEmbeddable> comments) {
-        this.comments = comments;
     }
 
     public AuditInfoEmbeddable getAuditInfo() {

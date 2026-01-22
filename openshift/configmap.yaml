@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beeboard-api-config
+  namespace: beeboard
+  labels:
+    app.kubernetes.io/name: beeboard-api
+    app.kubernetes.io/component: configuration
+    app.kubernetes.io/part-of: beeboard-api
+data:
+  # HTTP Configuration
+  QUARKUS_HTTP_HOST: "0.0.0.0"
+  QUARKUS_HTTP_PORT: "8080"
+
+  # Logging
+  QUARKUS_LOG_LEVEL: "INFO"
+  QUARKUS_LOG_CONSOLE_FORMAT: "%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n"
+  QUARKUS_CONSOLE_COLOR: "true"
+
+  # Database Configuration
+  QUARKUS_DATASOURCE_DB_KIND: "postgresql"
+
+  # Flyway Migration
+  QUARKUS_FLYWAY_MIGRATE_AT_START: "true"
+  QUARKUS_FLYWAY_LOCATIONS: "classpath:db/migration"
+
+  # Hibernate ORM
+  QUARKUS_HIBERNATE_ORM_MAPPING_FORMAT_GLOBAL: "ignore"
+  QUARKUS_HIBERNATE_ORM_ORDER_INSERTS: "true"
+  QUARKUS_HIBERNATE_ORM_ORDER_UPDATES: "true"
+
+  # JWT Configuration (non-sensitive)
+  MP_JWT_VERIFY_ISSUER: "beeboard-api"
+  JWT_DURATION: "3600"
+
+  # Security Paths (public endpoints)
+  QUARKUS_HTTP_AUTH_PERMISSION_PUBLIC_PATHS: "/api/v1/auth/login,/api/v1/auth/password-reset/*"
+  QUARKUS_HTTP_AUTH_PERMISSION_PUBLIC_POLICY: "permit"
+  QUARKUS_HTTP_AUTH_PERMISSION_INTERNAL_PATHS: "/api/v1/internal/*"
+  QUARKUS_HTTP_AUTH_PERMISSION_INTERNAL_POLICY: "permit"
+  QUARKUS_HTTP_AUTH_PERMISSION_AUTHENTICATED_PATHS: "/api/v1/*"
+  QUARKUS_HTTP_AUTH_PERMISSION_AUTHENTICATED_POLICY: "authenticated"
+
+  # SMTP Configuration (non-sensitive)
+  MAIL_FROM: "onboarding@resend.dev"
+  QUARKUS_MAILER_HOST: "smtp.resend.com"
+  QUARKUS_MAILER_PORT: "465"
+  QUARKUS_MAILER_TLS: "REQUIRED"
+  QUARKUS_MAILER_START_TLS: "DISABLED"
+  QUARKUS_MAILER_USERNAME: "resend"
+  QUARKUS_MAILER_MOCK: "false"
+
+  # Password Reset Configuration
+  FRONTEND_BASE_URL: "https://beeboard.example.com"
+  PASSWORD_RESET_ENABLED: "true"
+  PASSWORD_RESET_RATE_LIMIT: "3"
+  PASSWORD_RESET_RATE_WINDOW: "1"
+
+  # Cache Configuration
+  QUARKUS_CACHE_CAFFEINE_SECURITY_CONTEXT_EXPIRE_AFTER_WRITE: "15M"
+  QUARKUS_CACHE_CAFFEINE_SECURITY_CONTEXT_MAXIMUM_SIZE: "1000"
+
+  # Event-Driven Architecture Logging
+  QUARKUS_LOG_CATEGORY_ORG_ACCESS_DOMAIN_EVENT_LEVEL: "INFO"
+  QUARKUS_LOG_CATEGORY_ORG_SHARED_INFRASTRUCTURE_EVENT_LEVEL: "DEBUG"
+  QUARKUS_LOG_CATEGORY_ORG_NOTE_APPLICATION_EVENT_LEVEL: "INFO"
+  QUARKUS_LOG_CATEGORY_IO_QUARKUS_CACHE_LEVEL: "INFO"
+  QUARKUS_LOG_CATEGORY_JAKARTA_ENTERPRISE_EVENT_LEVEL: "WARN"
+
+  # Swagger UI (enable in OpenShift for API documentation)
+  QUARKUS_SWAGGER_UI_ALWAYS_INCLUDE: "true"
+  QUARKUS_SWAGGER_UI_PATH: "/q/swagger-ui"
+
+  # CORS Configuration (adjust allowed origins as needed)
+  QUARKUS_HTTP_CORS: "true"
+  QUARKUS_HTTP_CORS_ORIGINS: "https://beeboard.example.com"
+  QUARKUS_HTTP_CORS_METHODS: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+  QUARKUS_HTTP_CORS_HEADERS: "accept,authorization,content-type,x-requested-with"
+  QUARKUS_HTTP_CORS_EXPOSED_HEADERS: "Content-Disposition"
+  QUARKUS_HTTP_CORS_ACCESS_CONTROL_MAX_AGE: "24H"

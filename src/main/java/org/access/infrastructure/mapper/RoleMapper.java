@@ -35,7 +35,8 @@ public class RoleMapper {
             permissions,
             new AuditInfo(entity.getAuditInfo().getCreatedAt(), entity.getAuditInfo().getUpdatedAt()),
             SecurityTier.valueOf(entity.getTier()),
-            entity.isSystem()
+            entity.isSystem(),
+            entity.getApplicationRole()
         );
     }
     /**
@@ -63,6 +64,9 @@ public class RoleMapper {
         // Set security tier and system flag
         entity.setTier(role.tier().name());
         entity.setSystem(role.isSystem());
+
+        // Set application role for cross-BC communication
+        entity.setApplicationRole(role.getApplicationRole());
 
         // Map permission identifiers to lightweight PermissionEntity references
         Set<PermissionEntity> permissions = role.permissions().stream()

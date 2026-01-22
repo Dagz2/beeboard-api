@@ -39,11 +39,14 @@ class CreateUserTest {
     @Mock
     AuditService auditService;
 
+    @Mock
+    org.shared.event.EventPublisher eventPublisher;
+
     CreateUser useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new CreateUser(userRepository, roleRepository, privilegeGuard, auditService);
+        useCase = new CreateUser(userRepository, roleRepository, privilegeGuard, auditService, eventPublisher);
     }
 
     @Nested

@@ -46,7 +46,10 @@ public class CreateRole {
     public void execute(CreateRoleCommand command, SecurityContext securityContext) {
         Role role = Role.create(
             new RoleCode(command.code()),
-            new RoleName(command.name())
+            new RoleName(command.name()),
+            command.tier(),
+            command.isSystem(),
+            command.applicationRole()
         );
 
         roleRepository.save(role);
@@ -58,7 +61,7 @@ public class CreateRole {
             "ROLE",
             role.id().id().toString(),
             null,
-            "{\"code\": \"" + command.code() + "\", \"name\": \"" + command.name() + "\"}"
+            "{\"code\": \"" + command.code() + "\", \"name\": \"" + command.name() + "\", \"tier\": \"" + command.tier() + "\", \"applicationRole\": \"" + command.applicationRole() + "\"}"
         );
     }
 }

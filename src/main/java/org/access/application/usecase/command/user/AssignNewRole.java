@@ -6,6 +6,7 @@ import jakarta.transaction.Transactional;
 
 import org.access.application.dto.command.user.AssignNewRoleCommand;
 import org.access.application.service.AuditService;
+import org.access.domain.event.UserRoleChangedEvent;
 import org.access.domain.model.Role;
 import org.access.domain.model.RoleId;
 import org.access.domain.model.SecurityContext;
@@ -15,6 +16,7 @@ import org.access.domain.repository.RoleRepository;
 import org.access.domain.repository.UserRepository;
 import org.access.domain.service.PrivilegeEscalationGuard;
 import org.access.application.service.SecurityContextService;
+import org.shared.event.EventPublisher;
 
 /**
  * Use case for assigning a new role to a user.
@@ -37,6 +39,7 @@ public class AssignNewRole {
     private final PrivilegeEscalationGuard privilegeGuard;
     private final AuditService auditService;
     private final SecurityContextService securityContextService;
+    private final EventPublisher eventPublisher;
 
     /**
      * Constructs the use case with the required dependencies.
@@ -50,12 +53,14 @@ public class AssignNewRole {
     @Inject
     public AssignNewRole(UserRepository userRepository, RoleRepository roleRepository,
                          PrivilegeEscalationGuard privilegeGuard, AuditService auditService,
-                         SecurityContextService securityContextService) {
+                         SecurityContextService securityContextService,
+                         EventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.privilegeGuard = privilegeGuard;
         this.auditService = auditService;
         this.securityContextService = securityContextService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -86,7 +91,12 @@ public class AssignNewRole {
         User user = userRepository.findById(targetUserId)
             .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + command.userId()));
 
-        String oldRoleId = user.getRoleId().id().toString();
+        // Capture old role details BEFORE modification for event
+        RoleId oldRoleId = user.getRoleId();
+        Role oldRole = roleRepository.findById(oldRoleId)
+            .orElseThrow(() -> new IllegalArgumentException("Old role not found"));
+
+        // Perform the role assignment
         user.assignRole(newRoleId);
         userRepository.update(user);
 
@@ -96,11 +106,23 @@ public class AssignNewRole {
             "ASSIGN_ROLE",
             "USER",
             targetUserId.id().toString(),
-            "{\"roleId\": \"" + oldRoleId + "\"}",
+            "{\"roleId\": \"" + oldRoleId.id().toString() + "\"}",
             "{\"roleId\": \"" + newRoleId.id().toString() + "\"}"
         );
 
         // Invalidate security context for this user
         securityContextService.invalidate(command.userId());
+
+        // Publish domain event for cross-BC consistency
+        eventPublisher.publishAsync(new UserRoleChangedEvent(
+            null,  // eventId auto-generated
+            command.userId(),
+            oldRoleId.id(),
+            newRoleId.id(),
+            oldRole.getApplicationRole(),
+            targetRole.getApplicationRole(),
+            securityContext.actorId().id(),
+            null  // occurredAt auto-generated
+        ));
     }
 }

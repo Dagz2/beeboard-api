@@ -5,9 +5,14 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.note.application.dto.command.note.CreateNoteCommand;
 import org.note.domain.exception.InvalidNoteOperationException;
+import org.note.domain.exception.TagNotFoundException;
 import org.note.domain.model.*;
 import org.note.domain.port.ProjectAccessPort;
 import org.note.domain.repository.NoteRepository;
+import org.note.domain.repository.TagRepository;
+
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Use case for creating a new note.
@@ -20,6 +25,9 @@ public class CreateNote {
 
     @Inject
     ProjectAccessPort projectAccessPort;
+
+    @Inject
+    TagRepository tagRepository;
 
     /**
      * Executes the create note command.
@@ -50,8 +58,32 @@ public class CreateNote {
         // Create note using domain factory
         Note note = Note.create(title, content, category, visibility, authorId, projectId);
 
+        // Add tags if provided
+        if (command.tagIds() != null && !command.tagIds().isEmpty()) {
+            addTagsToNote(note, command.tagIds());
+        }
+
         // Persist
         noteRepository.save(note);
+    }
+
+    private void addTagsToNote(Note note, Set<UUID> tagIds) {
+        for (UUID tagIdUuid : tagIds) {
+            TagId tagId = new TagId(tagIdUuid);
+
+            // Validate that the tag exists
+            Tag tag = tagRepository.findById(tagId)
+                    .orElseThrow(() -> TagNotFoundException.withId(tagId));
+
+            // Add the tag to the note
+            note.addTag(tagId);
+
+            // Increment the tag's usage count
+            tag.incrementUsage();
+
+            // Save the updated tag
+            tagRepository.update(tag);
+        }
     }
 
     private NoteContent createNoteContent(String body, String contentType) {

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.shared.domain.ApplicationRole;
 
 import static org.access.support.TestFixtures.*;
 import static org.assertj.core.api.Assertions.*;
@@ -48,7 +49,7 @@ class CreateRoleTest {
                 .asDirector()
                 .build();
 
-            CreateRoleCommand command = new CreateRoleCommand("NEW_ROLE", "New Role");
+            CreateRoleCommand command = new CreateRoleCommand("NEW_ROLE", "New Role", SecurityTier.TIER_2, false, ApplicationRole.MEMBER);
 
             // When
             useCase.execute(command, ctx);
@@ -70,7 +71,7 @@ class CreateRoleTest {
                 .asDirector()
                 .build();
 
-            CreateRoleCommand command = new CreateRoleCommand("BASIC_ROLE", "Basic Role");
+            CreateRoleCommand command = new CreateRoleCommand("BASIC_ROLE", "Basic Role", SecurityTier.TIER_2, false, ApplicationRole.MEMBER);
 
             // When
             useCase.execute(command, ctx);
@@ -91,7 +92,7 @@ class CreateRoleTest {
                 .asDirector()
                 .build();
 
-            CreateRoleCommand command = new CreateRoleCommand("CUSTOM_ROLE", "Custom Role");
+            CreateRoleCommand command = new CreateRoleCommand("CUSTOM_ROLE", "Custom Role", SecurityTier.TIER_2, false, ApplicationRole.MEMBER);
 
             // When
             useCase.execute(command, ctx);
@@ -112,7 +113,7 @@ class CreateRoleTest {
                 .asDirector()
                 .build();
 
-            CreateRoleCommand command = new CreateRoleCommand("AUDITED_ROLE", "Audited Role");
+            CreateRoleCommand command = new CreateRoleCommand("AUDITED_ROLE", "Audited Role", SecurityTier.TIER_2, false, ApplicationRole.MEMBER);
 
             // When
             useCase.execute(command, ctx);

@@ -1,23 +1,37 @@
 package org.note.infrastructure.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.Embedded;
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Embeddable object representing a comment within a note.
- * Comments are part of the Note aggregate and stored within the note.
+ * JPA entity representing a Comment within the Note aggregate.
+ *
+ * <p><strong>DDD Pattern:</strong> Comments are entities within the Note aggregate boundary.
+ * They are NOT aggregate roots and their lifecycle is controlled by the Note aggregate.
+ * The ON DELETE CASCADE foreign key enforces this relationship at the database level.
+ *
+ * <p><strong>Design Decision:</strong> This entity does NOT use JPA relationships (@ManyToOne)
+ * to reference the parent Note or parent Comment. Instead, it stores only the UUIDs (noteId, parentCommentId).
+ * This keeps the design simple and avoids lazy loading complexities.
  */
-@Embeddable
-public class CommentEmbeddable {
+@Entity
+@Table(name = "comment")
+public class CommentEntity extends PanacheEntityBase {
 
-    @NotNull
+    @Id
     @Column(name = "comment_id", nullable = false)
     private UUID commentId;
+
+    /**
+     * Foreign key to the parent Note.
+     * CASCADE DELETE ensures comments are deleted when the note is deleted.
+     */
+    @NotNull
+    @Column(name = "note_id", nullable = false)
+    private UUID noteId;
 
     @NotNull
     @Column(name = "author_id", nullable = false)
@@ -27,6 +41,10 @@ public class CommentEmbeddable {
     @Column(name = "content", length = 5000, nullable = false)
     private String content;
 
+    /**
+     * Optional reference to a parent comment for threading (replies).
+     * Null if this is a root-level comment.
+     */
     @Column(name = "parent_comment_id")
     private UUID parentCommentId;
 
@@ -42,19 +60,11 @@ public class CommentEmbeddable {
     @NotNull
     private AuditInfoEmbeddable auditInfo;
 
-    public CommentEmbeddable() {
+    // Default constructor for JPA
+    public CommentEntity() {
     }
 
-    public CommentEmbeddable(UUID commentId, UUID authorId, String content, UUID parentCommentId,
-                             String solutionStatus, String moderationStatus, AuditInfoEmbeddable auditInfo) {
-        this.commentId = commentId;
-        this.authorId = authorId;
-        this.content = content;
-        this.parentCommentId = parentCommentId;
-        this.solutionStatus = solutionStatus;
-        this.moderationStatus = moderationStatus;
-        this.auditInfo = auditInfo;
-    }
+    // Getters and Setters
 
     public UUID getCommentId() {
         return commentId;
@@ -62,6 +72,14 @@ public class CommentEmbeddable {
 
     public void setCommentId(UUID commentId) {
         this.commentId = commentId;
+    }
+
+    public UUID getNoteId() {
+        return noteId;
+    }
+
+    public void setNoteId(UUID noteId) {
+        this.noteId = noteId;
     }
 
     public UUID getAuthorId() {
@@ -110,17 +128,5 @@ public class CommentEmbeddable {
 
     public void setAuditInfo(AuditInfoEmbeddable auditInfo) {
         this.auditInfo = auditInfo;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof CommentEmbeddable that)) return false;
-        return commentId.equals(that.commentId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(commentId);
     }
 }

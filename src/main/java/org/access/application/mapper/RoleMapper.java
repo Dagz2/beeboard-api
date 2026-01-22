@@ -21,8 +21,8 @@ public class RoleMapper {
     /**
      * Converts a {@link Role} domain object into a {@link RoleDto} instance.
      *
-     * <p>The mapping extracts core business values (id, code, name) as well as audit information and
-     * permissions (converted into a set of UUIDs).</p>
+     * <p>The mapping extracts core business values (id, code, name) as well as audit information,
+     * permissions (converted into a set of UUIDs), security tier, system flag, and application role.</p>
      *
      * @param role the domain Role entity to map (must not be {@code null})
      * @return a fully populated {@link RoleDto} object
@@ -46,7 +46,10 @@ public class RoleMapper {
                 role.auditInfo().getCreatedAt(),
                 role.auditInfo().getUpdatedAt()
             ),
-            permissionIds
+            permissionIds,
+            role.tier(),
+            role.isSystem(),
+            role.getApplicationRole()
         );
     }
 }

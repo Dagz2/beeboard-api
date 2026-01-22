@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.note.application.dto.command.comment.AddCommentCommand;
 import org.note.domain.exception.NoteNotFoundException;
+import org.note.domain.exception.ParentCommentNotFoundException;
 import org.note.domain.model.*;
 import org.note.domain.port.ProjectAccessPort;
 import org.note.domain.repository.NoteRepository;
@@ -46,6 +47,18 @@ public class AddComment {
         CommentId parentCommentId = command.parentCommentId() != null
                 ? new CommentId(command.parentCommentId())
                 : null;
+
+        // Validate parent comment if this is a reply
+        if (parentCommentId != null) {
+            // Check that parent comment exists within this note
+            CommentId finalParentCommentId = parentCommentId;
+            boolean parentExists = note.getComments().stream()
+                    .anyMatch(c -> c.getId().equals(finalParentCommentId));
+
+            if (!parentExists) {
+                throw ParentCommentNotFoundException.withId(parentCommentId, noteId);
+            }
+        }
 
         Comment comment = Comment.create(authorId, command.content(), parentCommentId);
 

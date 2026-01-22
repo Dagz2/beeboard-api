@@ -6,6 +6,7 @@ import jakarta.transaction.Transactional;
 
 import org.access.application.dto.command.user.TerminateContractCommand;
 import org.access.application.service.AuditService;
+import org.access.domain.event.UserContractTerminatedEvent;
 import org.access.domain.model.Role;
 import org.access.domain.model.SecurityContext;
 import org.access.domain.model.User;
@@ -13,6 +14,9 @@ import org.access.domain.model.UserId;
 import org.access.domain.repository.RoleRepository;
 import org.access.domain.repository.UserRepository;
 import org.access.domain.service.PrivilegeEscalationGuard;
+import org.shared.event.EventPublisher;
+
+import java.time.LocalDate;
 
 /**
  * Use case for terminating a user's contract.
@@ -33,6 +37,7 @@ public class TerminateContract {
     private final RoleRepository roleRepository;
     private final PrivilegeEscalationGuard privilegeGuard;
     private final AuditService auditService;
+    private final EventPublisher eventPublisher;
 
     /**
      * Constructs the use case with the required dependencies.
@@ -44,11 +49,13 @@ public class TerminateContract {
      */
     @Inject
     public TerminateContract(UserRepository userRepository, RoleRepository roleRepository,
-                             PrivilegeEscalationGuard privilegeGuard, AuditService auditService) {
+                             PrivilegeEscalationGuard privilegeGuard, AuditService auditService,
+                             EventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.privilegeGuard = privilegeGuard;
         this.auditService = auditService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -91,5 +98,15 @@ public class TerminateContract {
             "{\"contractEndDate\": \"" + oldEndDate + "\", \"isLocked\": false}",
             "{\"contractEndDate\": \"today\", \"isLocked\": true}"
         );
+
+        // Publish domain event for cross-BC consistency
+        eventPublisher.publishAsync(new UserContractTerminatedEvent(
+            null,  // eventId auto-generated
+            command.userId(),
+            user.getEmail().value(),
+            LocalDate.now(),  // Contract terminated today
+            securityContext.actorId().id(),
+            null  // occurredAt auto-generated
+        ));
     }
 }
