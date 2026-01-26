@@ -1,0 +1,66 @@
+classDiagram
+    direction TB
+
+    class Permission {
+        <<Aggregate Root>>
+        -PermissionId id
+        -PermissionCode code
+        -PermissionName name
+        -String description
+        -SecurityTier tier
+        -boolean isSystem
+        +create(PermissionCode, PermissionName, String)$ Permission
+        +create(PermissionCode, PermissionName, String, SecurityTier, boolean)$ Permission
+        +updateCode(PermissionCode) void
+        +updateName(PermissionName) void
+        +updateDescription(String) void
+        +tier() SecurityTier
+        +isSystem() boolean
+    }
+
+    class PermissionId {
+        <<Value Object>>
+        -UUID id
+        +newId()$ PermissionId
+        +id() UUID
+    }
+
+    class PermissionCode {
+        <<Value Object>>
+        -String value
+        +value() String
+    }
+
+    class PermissionName {
+        <<Value Object>>
+        -String value
+        +value() String
+    }
+
+    class PermissionRepository {
+        <<Interface>>
+        +save(Permission) void
+        +update(Permission) void
+        +findById(PermissionId) Optional~Permission~
+        +findByCode(PermissionCode) Optional~Permission~
+        +findAll() List~Permission~
+        +findAllByIds(Set~PermissionId~) List~Permission~
+        +delete(PermissionId) void
+    }
+
+    class SecurityTier {
+        <<Enumeration>>
+        TIER_0
+        TIER_1
+        TIER_2
+        +canManage(SecurityTier) boolean
+        +isAtLeast(SecurityTier) boolean
+        +defaultTier()$ SecurityTier
+    }
+
+    Permission *-- PermissionId
+    Permission *-- PermissionCode
+    Permission *-- PermissionName
+    Permission *-- SecurityTier
+
+    PermissionRepository ..> Permission : manages

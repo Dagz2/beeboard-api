@@ -1,0 +1,39 @@
+flowchart LR
+    subgraph UseCase["Use Case"]
+        UC[AssignNewRole<br/>CreateUser<br/>LockUser<br/>...]
+    end
+
+    subgraph Service["AuditService"]
+        AS[record]
+        IP[extractIpAddress]
+        UA[extractUserAgent]
+    end
+
+    subgraph Context["RoutingContext"]
+        REQ[HTTP Request<br/>Headers]
+    end
+
+    subgraph Domain["AuditLog"]
+        AL[Create AuditLog<br/>• id: UUID<br/>• occurredAt: now<br/>• actorId, actorEmail<br/>• actorTier<br/>• action, targetType<br/>• oldValue, newValue<br/>• ipAddress, userAgent]
+    end
+
+    subgraph Repository["AuditLogRepository"]
+        REPO[append only]
+    end
+
+    subgraph Database["PostgreSQL"]
+        TBL[(audit_log table)]
+        TRG[/TRIGGER\<br/>prevent_audit_modification/]
+    end
+
+    UC -->|"1. securityContext"| AS
+    AS --> IP
+    AS --> UA
+    IP --> REQ
+    UA --> REQ
+    AS -->|"2. create"| AL
+    AL -->|"3. append"| REPO
+    REPO -->|"4. INSERT"| TBL
+    TBL --- TRG
+
+    style TRG fill:#ffcdd2,stroke:#c62828

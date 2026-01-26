@@ -1,0 +1,57 @@
+classDiagram
+    direction TB
+
+    class PrivilegeEscalationGuard {
+        <<Domain Service>>
+        +validateNotSelfModification(UserId actorId, UserId targetUserId) void
+        +validateRoleAssignment(SecurityTier actorTier, Role targetRole) void
+        +validatePermissionGrant(SecurityTier actorTier, Permission targetPermission) void
+        +validateSystemRoleModification(SecurityTier actorTier, Role role) void
+        +validateRoleDeletion(Role role) void
+        +validateSystemPermissionModification(SecurityTier actorTier, Permission permission) void
+        +validatePermissionDeletion(Permission permission) void
+        +validateMinimumTier(SecurityTier actorTier, SecurityTier requiredTier) void
+        +validateTierZeroRequired(SecurityTier actorTier, String operation) void
+        +validateUserManagement(SecurityTier actorTier, SecurityTier targetUserTier) void
+    }
+
+    class SecurityTier {
+        <<Enumeration>>
+        TIER_0
+        TIER_1
+        TIER_2
+        +canManage(SecurityTier) boolean
+        +isAtLeast(SecurityTier) boolean
+    }
+
+    class SelfModificationForbiddenException {
+        <<Exception>>
+        +cannotModifyOwnRole()$ SelfModificationForbiddenException
+    }
+
+    class PrivilegeEscalationException {
+        <<Exception>>
+        +cannotAssignHigherTierRole(String, String)$ PrivilegeEscalationException
+        +cannotGrantHigherTierPermission(String, String)$ PrivilegeEscalationException
+        +cannotManageHigherTierUser(String, String)$ PrivilegeEscalationException
+    }
+
+    class SystemResourceProtectedException {
+        <<Exception>>
+        +cannotModifySystemRole(String)$ SystemResourceProtectedException
+        +cannotDeleteSystemRole(String)$ SystemResourceProtectedException
+        +cannotModifySystemPermission(String)$ SystemResourceProtectedException
+        +cannotDeleteSystemPermission(String)$ SystemResourceProtectedException
+    }
+
+    class InsufficientTierException {
+        <<Exception>>
+        +requiresTier(SecurityTier, SecurityTier)$ InsufficientTierException
+        +onlyTierZeroCanPerform(String)$ InsufficientTierException
+    }
+
+    PrivilegeEscalationGuard ..> SecurityTier : uses
+    PrivilegeEscalationGuard ..> SelfModificationForbiddenException : throws
+    PrivilegeEscalationGuard ..> PrivilegeEscalationException : throws
+    PrivilegeEscalationGuard ..> SystemResourceProtectedException : throws
+    PrivilegeEscalationGuard ..> InsufficientTierException : throws

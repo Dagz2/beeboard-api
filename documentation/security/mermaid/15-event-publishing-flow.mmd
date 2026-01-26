@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    participant UC as Access BC Use Case<br/>(CreateUser, AssignNewRole...)
+    participant EP as EventPublisher<br/>(publishAsync)
+    participant CDI as CDI Event Bus<br/>(Enterprise.fireAsync)
+    participant EH as Note BC<br/>UserEventHandler<br/>(@ObservesAsync)
+    participant ACL as Anti-Corruption Layer<br/>(translateToAccessLevel)
+    participant AV as author_view<br/>(CQRS read model)
+
+    UC->>UC: Execute domain logic<br/>(create/update User)
+    UC->>EP: publishAsync(event)
+    Note over EP: Non-blocking<br/>Use case returns immediately
+
+    EP->>CDI: Enterprise.fireAsync(event)
+    Note over CDI: Async delivery<br/>No wait for consumers
+
+    CDI->>EH: @ObservesAsync<br/>Deliver event
+    EH->>ACL: translateToAccessLevel<br/>(ApplicationRole → AccessLevel)
+    ACL-->>EH: AccessLevel
+    EH->>AV: UPDATE/INSERT/DELETE
+
+    Note over AV: Local CQRS model<br/>Fast queries (<5ms)
+
+    UC-->>UC: ✓ Complete<br/>(without waiting)

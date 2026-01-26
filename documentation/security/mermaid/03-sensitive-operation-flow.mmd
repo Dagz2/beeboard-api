@@ -1,0 +1,43 @@
+sequenceDiagram
+    autonumber
+    participant D as DIRECTOR (TIER_1)
+    participant API as PUT /users/{id}/role
+    participant JWT as JWT Validation
+    participant PI as PermissionInterceptor
+    participant PEG as PrivilegeEscalationGuard
+    participant UC as AssignNewRole
+    participant AS as AuditService
+    participant DB as PostgreSQL
+    participant EP as EventPublisher
+    participant CDI as CDI Event Bus
+
+    D->>API: Assign HR_MANAGER to user
+    API->>JWT: Validate token
+    JWT-->>API: ✓ Token valid
+
+    API->>PI: @RequiresPermission("ASSIGN_*_ROLES")
+    PI->>PI: Load DIRECTOR permissions
+    PI-->>API: ✓ ASSIGN_STANDARD_ROLES present
+
+    API->>PEG: validateNotSelfModification()
+    PEG-->>API: ✓ No self-modification
+
+    API->>PEG: validateRoleAssignment(TIER_1, HR_MANAGER)
+    PEG->>PEG: TIER_1.canManage(TIER_2)?
+    PEG-->>API: ✓ Hierarchy respected
+
+    API->>UC: execute(command, securityContext)
+    UC->>DB: UPDATE users SET role_id = ...
+    DB-->>UC: ✓ User updated
+
+    UC->>AS: record("ASSIGN_ROLE", ...)
+    AS->>DB: INSERT INTO audit_log
+    DB-->>AS: ✓ Audit recorded
+
+    Note over UC,EP: Event-Driven Cross-BC Sync
+    UC->>EP: publishAsync(UserRoleChangedEvent)
+    EP->>CDI: fireAsync(event)
+    Note over CDI: Non-blocking delivery to Note BC
+
+    UC-->>API: ✓ Success
+    API-->>D: 200 OK

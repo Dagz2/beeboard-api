@@ -87,7 +87,7 @@ class DeleteUserEventTest {
 
         // Then
         ArgumentCaptor<UserDeletedEvent> eventCaptor = ArgumentCaptor.forClass(UserDeletedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserDeletedEvent event = eventCaptor.getValue();
         assertThat(event).isNotNull();
@@ -129,7 +129,7 @@ class DeleteUserEventTest {
 
         // Then - verify user data is captured BEFORE deletion
         ArgumentCaptor<UserDeletedEvent> eventCaptor = ArgumentCaptor.forClass(UserDeletedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserDeletedEvent event = eventCaptor.getValue();
         assertThat(event.email()).isEqualTo(email);
@@ -154,7 +154,7 @@ class DeleteUserEventTest {
 
         // Then - verify event is published after deletion
         verify(userRepository).deleteById(any(UserId.class));
-        verify(eventPublisher).publish(any(UserDeletedEvent.class));
+        verify(eventPublisher).publishAsync(any(UserDeletedEvent.class));
         verify(auditService).record(any(), any(), any(), any(), any(), any());
     }
 }

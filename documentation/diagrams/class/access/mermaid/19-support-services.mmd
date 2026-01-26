@@ -1,0 +1,55 @@
+classDiagram
+    direction TB
+
+    class EmailService {
+        <<Application Service>>
+        -Mailer mailer
+        -String frontendBaseUrl
+        +sendPasswordResetEmail(User, ResetToken) void
+    }
+
+    class RateLimitService {
+        <<Application Service>>
+        -RateLimitRepository rateLimitRepository
+        -int rateLimit
+        -int windowHours
+        +isRateLimitExceeded(String email) boolean
+        +incrementRateLimit(String email) void
+        +cleanupExpiredLimits() void
+    }
+
+    class UserStatusService {
+        <<Application Service>>
+        -UserRepository userRepository
+        +checkStatus(UUID userId) UserStatus
+    }
+
+    class UserStatus {
+        <<Record>>
+        +exists boolean
+        +locked boolean
+        +contractExpired boolean
+        +notFound()$ UserStatus
+        +fromUser(User)$ UserStatus
+        +isAccessDenied() boolean
+    }
+
+    class PasswordResetCleanupService {
+        <<Scheduled Service>>
+        -PasswordResetRequestRepository resetRepository
+        -RateLimitRepository rateLimitRepository
+        +cleanupExpiredTokens() void
+        +cleanupExpiredRateLimits() void
+    }
+
+    EmailService ..> User
+    EmailService ..> ResetToken
+
+    RateLimitService ..> RateLimitRepository
+    RateLimitService ..> RateLimit
+
+    UserStatusService ..> UserRepository
+    UserStatusService ..> UserStatus
+
+    PasswordResetCleanupService ..> PasswordResetRequestRepository
+    PasswordResetCleanupService ..> RateLimitRepository

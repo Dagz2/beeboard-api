@@ -1,0 +1,28 @@
+classDiagram
+    direction TB
+
+    class RateLimit {
+        <<Domain Model>>
+        -String email
+        -int requestCount
+        -Instant windowStart
+        +firstRequest(String email)$ RateLimit
+        +email() String
+        +requestCount() int
+        +windowStart() Instant
+        +isLimitExceeded(int maxRequests) boolean
+        +isWindowExpired(int windowHours) boolean
+        +increment() RateLimit
+        +resetWindow() RateLimit
+    }
+
+    class RateLimitRepository {
+        <<Interface>>
+        +findByEmail(String) Optional~RateLimit~
+        +save(RateLimit) void
+        +deleteExpired(Instant cutoff) long
+    }
+
+    RateLimitRepository ..> RateLimit : manages
+
+    note for RateLimit "Immutable - operations return new instances"

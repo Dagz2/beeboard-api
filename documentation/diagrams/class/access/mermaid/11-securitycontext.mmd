@@ -1,0 +1,63 @@
+classDiagram
+    direction TB
+
+    class SecurityContext {
+        <<Value Object>>
+        -UserId actorId
+        -String actorEmail
+        -RoleId roleId
+        -RoleCode roleCode
+        -SecurityTier actorTier
+        -Set~PermissionCode~ permissions
+        +actorId() UserId
+        +actorEmail() String
+        +roleId() RoleId
+        +roleCode() RoleCode
+        +actorTier() SecurityTier
+        +permissions() Set~PermissionCode~
+        +hasPermission(PermissionCode) boolean
+        +hasPermission(String) boolean
+        +isSuperAdmin() boolean
+        +canManageTier(SecurityTier) boolean
+    }
+
+    class SecurityTier {
+        <<Enumeration>>
+        TIER_0
+        TIER_1
+        TIER_2
+        +canManage(SecurityTier) boolean
+        +isAtLeast(SecurityTier) boolean
+    }
+
+    class UserId {
+        <<Value Object>>
+        -UUID id
+        +newId()$ UserId
+        +id() UUID
+    }
+
+    class RoleId {
+        <<Value Object>>
+        -UUID id
+        +newId()$ RoleId
+        +id() UUID
+    }
+
+    class RoleCode {
+        <<Value Object>>
+        -String value
+        +value() String
+    }
+
+    class PermissionCode {
+        <<Value Object>>
+        -String value
+        +value() String
+    }
+
+    SecurityContext *-- SecurityTier
+    SecurityContext o-- UserId
+    SecurityContext o-- RoleId
+    SecurityContext o-- RoleCode
+    SecurityContext o-- PermissionCode

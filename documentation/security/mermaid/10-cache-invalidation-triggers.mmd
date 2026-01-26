@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph Triggers["Invalidation Triggers"]
+        T1[AssignNewRole]
+        T2[UpdateRole]
+        T3[GrantPermission]
+        T4[RevokePermissionFromRole]
+    end
+
+    subgraph Cache["SecurityContextCache"]
+        INV1[invalidate userId]
+        INV2[invalidateByRole roleId]
+    end
+
+    subgraph Effect["Cache Effect"]
+        E1[Remove single entry]
+        E2[Remove all users with role]
+    end
+
+    T1 --> INV1 --> E1
+    T2 --> INV2 --> E2
+    T3 --> INV2 --> E2
+    T4 --> INV2 --> E2

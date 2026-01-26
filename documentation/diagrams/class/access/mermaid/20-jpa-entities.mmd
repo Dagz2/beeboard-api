@@ -1,0 +1,77 @@
+classDiagram
+    direction TB
+
+    class UserEntity {
+        <<JPA Entity>>
+        -UUID id
+        -String firstName
+        -String lastName
+        -String email
+        -String passwordHash
+        -UUID roleId
+        -LocalDate contractEndDate
+        -boolean isLocked
+        -Instant createdAt
+        -Instant updatedAt
+        -Instant lastActivityDate
+    }
+
+    class RoleEntity {
+        <<JPA Entity>>
+        -UUID id
+        -String code
+        -String name
+        -Set~UUID~ permissionIds
+        -Instant createdAt
+        -Instant updatedAt
+        -String tier
+        -boolean isSystem
+    }
+
+    class PermissionEntity {
+        <<JPA Entity>>
+        -UUID id
+        -String code
+        -String name
+        -String description
+        -String tier
+        -boolean isSystem
+    }
+
+    class AuditLogEntity {
+        <<JPA Entity>>
+        -UUID id
+        -Instant occurredAt
+        -UUID actorId
+        -String actorEmail
+        -String actorTier
+        -String action
+        -String targetType
+        -String targetId
+        -String oldValue
+        -String newValue
+        -String ipAddress
+        -String userAgent
+    }
+
+    class PasswordResetRequestEntity {
+        <<JPA Entity>>
+        -UUID id
+        -UUID userId
+        -String tokenHash
+        -Instant expiresAt
+        -boolean isUsed
+        -Instant createdAt
+        -Instant updatedAt
+    }
+
+    class RateLimitEntity {
+        <<JPA Entity>>
+        -String email
+        -int requestCount
+        -Instant windowStart
+    }
+
+    UserEntity --> RoleEntity : roleId FK
+    RoleEntity --> PermissionEntity : permissionIds
+    PasswordResetRequestEntity --> UserEntity : userId FK

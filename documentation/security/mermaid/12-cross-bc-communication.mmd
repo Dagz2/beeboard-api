@@ -1,0 +1,23 @@
+flowchart TB
+    subgraph AccessBC["Access BC (Source of Truth)"]
+        UC[Use Case<br/>CreateUser<br/>AssignNewRole<br/>LockUser...]
+        EP[EventPublisher<br/>publishAsync]
+    end
+
+    subgraph CDI["CDI Event Bus"]
+        BUS[fireAsync<br/>Non-blocking delivery]
+    end
+
+    subgraph NoteBC["Note BC (Consumer)"]
+        EH["UserEventHandler<br/>@ObservesAsync<br/>Anti-Corruption Layer"]
+        AV[(author_view<br/>CQRS read model)]
+    end
+
+    UC -->|"1. Execute domain logic"| EP
+    EP -->|"2. Publish async"| BUS
+    BUS -->|"3. Deliver non-blocking"| EH
+    EH -->|"4. Translate & update"| AV
+
+    style AccessBC fill:#e3f2fd,stroke:#2196f3
+    style CDI fill:#fff3e0,stroke:#ff9800
+    style NoteBC fill:#f3e5f5,stroke:#9c27b0

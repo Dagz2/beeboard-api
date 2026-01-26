@@ -1,0 +1,29 @@
+classDiagram
+    direction TB
+
+    class AuditService {
+        <<Application Service>>
+        -AuditLogRepository auditLogRepository
+        +record(SecurityContext, String action, String targetType, String targetId, String oldValue, String newValue) void
+    }
+
+    class JwtService {
+        <<Application Service>>
+        -String secretKey
+        -long expirationMs
+        +generateToken(UserId, String email, RoleCode, SecurityTier, Set~PermissionCode~) String
+        +validateToken(String) boolean
+        +extractUserId(String) UserId
+        +extractEmail(String) String
+        +extractRoleCode(String) RoleCode
+        +extractTier(String) SecurityTier
+        +extractPermissions(String) Set~PermissionCode~
+    }
+
+    AuditService ..> AuditLogRepository
+    AuditService ..> SecurityContext
+
+    JwtService ..> UserId
+    JwtService ..> RoleCode
+    JwtService ..> SecurityTier
+    JwtService ..> PermissionCode

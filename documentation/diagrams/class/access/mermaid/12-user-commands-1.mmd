@@ -1,0 +1,52 @@
+classDiagram
+    direction TB
+
+    class CreateUser {
+        <<Use Case>>
+        -UserRepository userRepository
+        -RoleRepository roleRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(CreateUserCommand, SecurityContext) void
+    }
+
+    class AssignNewRole {
+        <<Use Case>>
+        -UserRepository userRepository
+        -RoleRepository roleRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(AssignNewRoleCommand, SecurityContext) void
+    }
+
+    class LockUser {
+        <<Use Case>>
+        -UserRepository userRepository
+        -RoleRepository roleRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(LockUserCommand, SecurityContext) void
+    }
+
+    class UnlockUser {
+        <<Use Case>>
+        -UserRepository userRepository
+        -RoleRepository roleRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(UnlockUserCommand, SecurityContext) void
+    }
+
+    class DeleteUser {
+        <<Use Case>>
+        -UserRepository userRepository
+        -RoleRepository roleRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(DeleteUserCommand, SecurityContext) void
+    }
+
+    CreateUser ..> UserRepository
+    CreateUser ..> RoleRepository
+    CreateUser ..> PrivilegeEscalationGuard
+    CreateUser ..> AuditService

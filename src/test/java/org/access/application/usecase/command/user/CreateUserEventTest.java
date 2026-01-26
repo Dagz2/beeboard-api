@@ -87,7 +87,7 @@ class CreateUserEventTest {
             "John",
             "Doe",
             "john.doe@example.com",
-            "SecurePassword123!",
+            "SecurePassword123!WithEnoughLengthToPass32Chars",
             memberRole.id().id(),
             LocalDate.now().plusYears(1)
         );
@@ -106,7 +106,7 @@ class CreateUserEventTest {
         // Then - Verify event was published
         ArgumentCaptor<UserCreatedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserCreatedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserCreatedEvent event = eventCaptor.getValue();
         assertThat(event).isNotNull();
@@ -134,7 +134,7 @@ class CreateUserEventTest {
             "Admin",
             "User",
             "admin@example.com",
-            "AdminPassword123!",
+            "AdminPassword123!WithEnoughLengthToPass32CharactersMin",
             adminRole.id().id(),
             LocalDate.now().plusYears(1)
         );
@@ -150,7 +150,7 @@ class CreateUserEventTest {
         // Then - Event should contain ADMIN application role
         ArgumentCaptor<UserCreatedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserCreatedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserCreatedEvent event = eventCaptor.getValue();
         assertThat(event.applicationRole()).isEqualTo(ApplicationRole.ADMIN);
@@ -164,7 +164,7 @@ class CreateUserEventTest {
             "Jane",
             "Smith",
             "jane.smith@example.com",
-            "Password123!",
+            "Password123!WithEnoughLengthToPass32CharsMinimum",
             memberRole.id().id(),
             LocalDate.now().plusYears(1)
         );
@@ -180,7 +180,7 @@ class CreateUserEventTest {
         // Then - New users should have ACTIVE status
         ArgumentCaptor<UserCreatedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserCreatedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserCreatedEvent event = eventCaptor.getValue();
         assertThat(event.accountStatus()).isEqualTo(AccountStatus.ACTIVE);
@@ -200,7 +200,7 @@ class CreateUserEventTest {
             "Test",
             "User",
             "test@example.com",
-            "Password123!",
+            "Password123!WithEnoughLengthToPass32CharsMinimum",
             memberRole.id().id(),
             LocalDate.now().plusYears(1)
         );
@@ -216,7 +216,7 @@ class CreateUserEventTest {
         // Then - Event should contain the correct actor ID
         ArgumentCaptor<UserCreatedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserCreatedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserCreatedEvent event = eventCaptor.getValue();
         assertThat(event.createdBy()).isEqualTo(actorId);
@@ -230,7 +230,7 @@ class CreateUserEventTest {
             "Single",
             "Event",
             "single@example.com",
-            "Password123!",
+            "Password123!WithEnoughLengthToPass32CharsMinimum",
             memberRole.id().id(),
             LocalDate.now().plusYears(1)
         );
@@ -244,6 +244,6 @@ class CreateUserEventTest {
         createUser.execute(command, superAdminContext);
 
         // Then - Exactly one event should be published
-        verify(eventPublisher, times(1)).publish(any(UserCreatedEvent.class));
+        verify(eventPublisher, times(1)).publishAsync(any(UserCreatedEvent.class));
     }
 }

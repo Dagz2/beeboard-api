@@ -109,7 +109,7 @@ class AssignNewRoleEventTest {
         // Then
         ArgumentCaptor<UserRoleChangedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserRoleChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserRoleChangedEvent event = eventCaptor.getValue();
         assertThat(event).isNotNull();
@@ -161,7 +161,7 @@ class AssignNewRoleEventTest {
         // Then
         ArgumentCaptor<UserRoleChangedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserRoleChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserRoleChangedEvent event = eventCaptor.getValue();
         assertThat(event.isEscalation()).isTrue();
@@ -204,7 +204,7 @@ class AssignNewRoleEventTest {
         // Then
         ArgumentCaptor<UserRoleChangedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserRoleChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserRoleChangedEvent event = eventCaptor.getValue();
         assertThat(event.isDegradation()).isTrue();
@@ -234,7 +234,7 @@ class AssignNewRoleEventTest {
 
         // Then - verify event is published AFTER user update but BEFORE transaction ends
         verify(userRepository).update(user);
-        verify(eventPublisher).publish(any(UserRoleChangedEvent.class));
+        verify(eventPublisher).publishAsync(any(UserRoleChangedEvent.class));
         verify(auditService).record(any(), any(), any(), any(), any(), any());
     }
 }

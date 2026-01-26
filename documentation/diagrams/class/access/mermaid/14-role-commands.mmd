@@ -1,0 +1,43 @@
+classDiagram
+    direction TB
+
+    class CreateRole {
+        <<Use Case>>
+        -RoleRepository roleRepository
+        -AuditService auditService
+        +execute(CreateRoleCommand, SecurityContext) void
+    }
+
+    class UpdateRole {
+        <<Use Case>>
+        -RoleRepository roleRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(UpdateRoleCommand, SecurityContext) void
+    }
+
+    class DeleteRole {
+        <<Use Case>>
+        -RoleRepository roleRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(DeleteRoleCommand, SecurityContext) void
+    }
+
+    class GrantPermission {
+        <<Use Case>>
+        -RoleRepository roleRepository
+        -PermissionRepository permissionRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(GrantPermissionCommand, SecurityContext) void
+    }
+
+    class RevokePermissionFromRole {
+        <<Use Case>>
+        -RoleRepository roleRepository
+        -PermissionRepository permissionRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(RevokePermissionCommand, SecurityContext) void
+    }

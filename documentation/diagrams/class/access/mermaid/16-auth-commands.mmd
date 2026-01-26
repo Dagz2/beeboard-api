@@ -1,0 +1,31 @@
+classDiagram
+    direction TB
+
+    class AuthenticateUser {
+        <<Use Case>>
+        -UserRepository userRepository
+        -RoleRepository roleRepository
+        -PermissionRepository permissionRepository
+        -JwtService jwtService
+        +execute(AuthenticateUserCommand) AuthenticationResponse
+    }
+
+    class RequestPasswordReset {
+        <<Use Case>>
+        -UserRepository userRepository
+        -PasswordResetRequestRepository resetRepository
+        -RateLimitService rateLimitService
+        -EmailService emailService
+        +execute(RequestPasswordResetCommand) void
+    }
+
+    class CompletePasswordReset {
+        <<Use Case>>
+        -UserRepository userRepository
+        -PasswordResetRequestRepository resetRepository
+        +execute(CompletePasswordResetCommand) void
+    }
+
+    AuthenticateUser ..> JwtService
+    RequestPasswordReset ..> EmailService
+    RequestPasswordReset ..> RateLimitService

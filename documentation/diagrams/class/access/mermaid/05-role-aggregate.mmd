@@ -1,0 +1,88 @@
+classDiagram
+    direction TB
+
+    class Role {
+        <<Aggregate Root>>
+        -RoleId id
+        -RoleCode code
+        -RoleName name
+        -Set~PermissionId~ permissions
+        -AuditInfo auditInfo
+        -SecurityTier tier
+        -boolean isSystem
+        +create(RoleCode, RoleName)$ Role
+        +create(RoleCode, RoleName, SecurityTier, boolean)$ Role
+        +grantPermission(PermissionId) boolean
+        +revokePermission(PermissionId) boolean
+        +hasPermission(PermissionId) boolean
+        +updateCode(RoleCode) void
+        +updateName(RoleName) void
+        +permissions() Set~PermissionId~
+        +tier() SecurityTier
+        +isSystem() boolean
+    }
+
+    class RoleId {
+        <<Value Object>>
+        -UUID id
+        +newId()$ RoleId
+        +id() UUID
+    }
+
+    class RoleCode {
+        <<Value Object>>
+        -String value
+        +value() String
+    }
+
+    class RoleName {
+        <<Value Object>>
+        -String value
+        +value() String
+    }
+
+    class SecurityTier {
+        <<Enumeration>>
+        TIER_0
+        TIER_1
+        TIER_2
+        +canManage(SecurityTier) boolean
+        +isAtLeast(SecurityTier) boolean
+        +defaultTier()$ SecurityTier
+    }
+
+    class PermissionId {
+        <<Value Object>>
+        -UUID id
+        +newId()$ PermissionId
+        +id() UUID
+    }
+
+    class RoleRepository {
+        <<Interface>>
+        +save(Role) void
+        +update(Role) void
+        +findById(RoleId) Optional~Role~
+        +findByCode(RoleCode) Optional~Role~
+        +findAll() List~Role~
+        +delete(RoleId) void
+    }
+
+    class AuditInfo {
+        <<Value Object>>
+        -Instant createdAt
+        -Instant updatedAt
+        +of(Instant)$ AuditInfo
+        +touch() void
+        +createdAt() Instant
+        +updatedAt() Instant
+    }
+
+    Role *-- RoleId
+    Role *-- RoleCode
+    Role *-- RoleName
+    Role *-- SecurityTier
+    Role *-- AuditInfo
+    Role o-- PermissionId : contains many
+
+    RoleRepository ..> Role : manages

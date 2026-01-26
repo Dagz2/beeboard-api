@@ -79,7 +79,7 @@ class ChangeFullNameEventTest {
         // Then - Verify event was published
         ArgumentCaptor<UserFullNameChangedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserFullNameChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserFullNameChangedEvent event = eventCaptor.getValue();
         assertThat(event).isNotNull();
@@ -122,7 +122,7 @@ class ChangeFullNameEventTest {
 
         // Then - Verify event is published after update
         verify(userRepository).update(user);
-        verify(eventPublisher).publish(any(UserFullNameChangedEvent.class));
+        verify(eventPublisher).publishAsync(any(UserFullNameChangedEvent.class));
     }
 
     @Test
@@ -156,7 +156,7 @@ class ChangeFullNameEventTest {
         // Then - Event should contain the correct actor ID
         ArgumentCaptor<UserFullNameChangedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserFullNameChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserFullNameChangedEvent event = eventCaptor.getValue();
         assertThat(event.changedBy()).isEqualTo(actorId);
@@ -188,7 +188,7 @@ class ChangeFullNameEventTest {
         // Then - Event should contain the original name, not the changed name
         ArgumentCaptor<UserFullNameChangedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserFullNameChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserFullNameChangedEvent event = eventCaptor.getValue();
         assertThat(event.oldFirstName()).isEqualTo("Original");
@@ -221,6 +221,6 @@ class ChangeFullNameEventTest {
         useCase.execute(command, ctx);
 
         // Then - Exactly one event should be published
-        verify(eventPublisher, times(1)).publish(any(UserFullNameChangedEvent.class));
+        verify(eventPublisher, times(1)).publishAsync(any(UserFullNameChangedEvent.class));
     }
 }

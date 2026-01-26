@@ -1,0 +1,69 @@
+classDiagram
+    direction TB
+
+    class AuditLog {
+        <<Aggregate Root - Immutable>>
+        -AuditLogId id
+        -Instant occurredAt
+        -UserId actorId
+        -String actorEmail
+        -SecurityTier actorTier
+        -String action
+        -String targetType
+        -String targetId
+        -String oldValue
+        -String newValue
+        -String ipAddress
+        -String userAgent
+        +create(UserId, String, SecurityTier, String, String, String, String, String, String, String)$ AuditLog
+        +id() AuditLogId
+        +occurredAt() Instant
+        +actorId() UserId
+        +actorEmail() String
+        +actorTier() SecurityTier
+        +action() String
+        +targetType() String
+        +targetId() String
+        +oldValue() String
+        +newValue() String
+    }
+
+    class AuditLogId {
+        <<Value Object>>
+        -UUID id
+        +newId()$ AuditLogId
+        +id() UUID
+    }
+
+    class AuditLogRepository {
+        <<Interface>>
+        +save(AuditLog) void
+        +findById(AuditLogId) Optional~AuditLog~
+        +findByActorId(UserId) List~AuditLog~
+        +findByAction(String) List~AuditLog~
+        +findAll() List~AuditLog~
+    }
+
+    class UserId {
+        <<Value Object>>
+        -UUID id
+        +newId()$ UserId
+        +id() UUID
+    }
+
+    class SecurityTier {
+        <<Enumeration>>
+        TIER_0
+        TIER_1
+        TIER_2
+        +canManage(SecurityTier) boolean
+        +isAtLeast(SecurityTier) boolean
+    }
+
+    AuditLog *-- AuditLogId
+    AuditLog o-- UserId : references actor
+    AuditLog *-- SecurityTier
+
+    AuditLogRepository ..> AuditLog : manages
+
+    note for AuditLog "Immutable: Once created, cannot be modified or deleted"

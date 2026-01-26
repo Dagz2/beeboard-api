@@ -85,7 +85,7 @@ class UnlockUserEventTest {
 
         // Then
         ArgumentCaptor<UserUnlockedEvent> eventCaptor = ArgumentCaptor.forClass(UserUnlockedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserUnlockedEvent event = eventCaptor.getValue();
         assertThat(event).isNotNull();
@@ -116,7 +116,7 @@ class UnlockUserEventTest {
 
         // Then - verify event is published after update
         verify(userRepository).update(user);
-        verify(eventPublisher).publish(any(UserUnlockedEvent.class));
+        verify(eventPublisher).publishAsync(any(UserUnlockedEvent.class));
         verify(auditService).record(any(), any(), any(), any(), any(), any());
     }
 }

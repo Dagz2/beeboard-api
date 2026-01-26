@@ -1,0 +1,31 @@
+graph TB
+    Internet[🌐 Internet<br/>Utilisateurs] --> Router
+
+    Router[🔒 OpenShift Router<br/>Edge TLS Termination]
+
+    Router -->|HTTPS→HTTP| Frontend
+    Router -->|HTTPS→HTTP| Backend
+
+    Frontend[🎨 Frontend<br/>Next.js/React<br/>Port: 3000<br/>Replicas: 2]
+
+    Backend[🚀 Backend API<br/>Quarkus/Java 21<br/>Port: 8080<br/>Replicas: 2]
+
+    Database[🗄️ PostgreSQL 16<br/>Port: 5432<br/>Replicas: 1]
+
+    Storage[💾 PersistentVolumeClaim<br/>10Gi RWO]
+
+    Frontend -->|/api/v1/*| Backend
+    Backend -->|JDBC| Database
+    Database -->|mount| Storage
+
+    classDef network fill:#ff6b6b,stroke:#c92a2a,stroke-width:3px,color:#fff
+    classDef router fill:#ff8787,stroke:#e03131,stroke-width:3px,color:#fff
+    classDef app fill:#ffd43b,stroke:#fab005,stroke-width:2px,color:#000
+    classDef database fill:#339af0,stroke:#1864ab,stroke-width:2px,color:#fff
+    classDef storage fill:#da77f2,stroke:#9c36b5,stroke-width:2px,color:#fff
+
+    class Internet network
+    class Router router
+    class Frontend,Backend app
+    class Database database
+    class Storage storage

@@ -1,0 +1,25 @@
+classDiagram
+    direction TB
+
+    class CreatePermission {
+        <<Use Case>>
+        -PermissionRepository permissionRepository
+        -AuditService auditService
+        +execute(CreatePermissionCommand, SecurityContext) void
+    }
+
+    class UpdatePermission {
+        <<Use Case>>
+        -PermissionRepository permissionRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(UpdatePermissionCommand, SecurityContext) void
+    }
+
+    class DeletePermission {
+        <<Use Case>>
+        -PermissionRepository permissionRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(DeletePermissionCommand, SecurityContext) void
+    }

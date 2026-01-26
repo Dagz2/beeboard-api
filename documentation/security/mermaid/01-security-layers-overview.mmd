@@ -1,0 +1,43 @@
+flowchart TB
+    subgraph Request["HTTP Request"]
+        REQ[Client Request]
+    end
+
+    subgraph Layer1["LAYER 1: AUTHENTICATION"]
+        JWT[JWT Token Validation<br/>SmallRye JWT / MicroProfile]
+        USF[UserStatusFilter<br/>• Check if user is locked<br/>• Check if contract expired]
+        JWT --> USF
+    end
+
+    subgraph Layer2["LAYER 2: AUTHORIZATION"]
+        RP["@RequiresPermission"]
+        PI[PermissionInterceptor<br/>• Check permissions via cache<br/>• Verify required permission]
+        SCC[SecurityContextCache<br/>• Build SecurityContext<br/>• Caffeine cache 15min TTL<br/>• Proactive invalidation]
+        RP --> PI --> SCC
+    end
+
+    subgraph Layer3["LAYER 3: ANTI-ESCALATION"]
+        PEG[PrivilegeEscalationGuard<br/>• validateNotSelfModification<br/>• validateRoleAssignment<br/>• validatePermissionGrant<br/>• validateSystemResource]
+    end
+
+    subgraph Layer4["LAYER 4: BUSINESS"]
+        UC[Use Cases<br/>CreateUser, AssignNewRole,<br/>GrantPermission, LockUser...]
+    end
+
+    subgraph Layer5["LAYER 5: TRACEABILITY"]
+        AS[AuditService<br/>• Capture actor, action<br/>• Capture IP, User-Agent<br/>• Snapshot old/new values]
+        DB[(PostgreSQL audit_log<br/>TRIGGER: Immutability<br/>• Block UPDATE<br/>• Block DELETE)]
+        AS --> DB
+    end
+
+    REQ --> Layer1
+    Layer1 -->|"✓ Authenticated"| Layer2
+    Layer2 -->|"✓ Authorized"| Layer3
+    Layer3 -->|"✓ Validated"| Layer4
+    Layer4 -->|"✓ Executed"| Layer5
+
+    style Layer1 fill:#e8f5e9,stroke:#4caf50
+    style Layer2 fill:#e3f2fd,stroke:#2196f3
+    style Layer3 fill:#fff3e0,stroke:#ff9800
+    style Layer4 fill:#f3e5f5,stroke:#9c27b0
+    style Layer5 fill:#fce4ec,stroke:#e91e63

@@ -85,7 +85,7 @@ class LockUserEventTest {
 
         // Then
         ArgumentCaptor<UserLockedEvent> eventCaptor = ArgumentCaptor.forClass(UserLockedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserLockedEvent event = eventCaptor.getValue();
         assertThat(event).isNotNull();
@@ -118,7 +118,7 @@ class LockUserEventTest {
 
         // Then - verify event is published after update
         verify(userRepository).update(user);
-        verify(eventPublisher).publish(any(UserLockedEvent.class));
+        verify(eventPublisher).publishAsync(any(UserLockedEvent.class));
         verify(auditService).record(any(), any(), any(), any(), any(), any());
     }
 }

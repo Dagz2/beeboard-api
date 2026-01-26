@@ -1,0 +1,45 @@
+flowchart TB
+    subgraph T0["TIER_0 SUPER_ADMIN"]
+        direction TB
+        P0_1["MANAGE_PERMISSIONS"]
+        P0_2["MANAGE_SYSTEM_ROLES"]
+        P0_3["VIEW_AUDIT_LOGS"]
+        P0_4["ASSIGN_CRITICAL_ROLES"]
+    end
+
+    subgraph T1["TIER_1 DIRECTOR"]
+        direction TB
+        P1_1["MANAGE_USERS"]
+        P1_2["USER_DELETE"]
+        P1_3["MANAGE_ROLES"]
+        P1_4["ASSIGN_STANDARD_ROLES"]
+    end
+
+    subgraph T2["TIER_2 HR_MANAGER"]
+        direction TB
+        P2_1["USER_CREATE"]
+        P2_2["USER_READ"]
+        P2_3["USER_UPDATE"]
+        P2_4["USER_LOCK"]
+        P2_5["ASSIGN_BASIC_ROLES"]
+    end
+
+    T0 ==>|"inherits all"| T1
+    T1 ==>|"inherits all"| T2
+
+    style T0 fill:#c62828,stroke:#b71c1c,color:#ffffff
+    style T1 fill:#ef6c00,stroke:#e65100,color:#ffffff
+    style T2 fill:#2e7d32,stroke:#1b5e20,color:#ffffff
+    style P0_1 fill:#ffcdd2,stroke:#c62828,color:#333333
+    style P0_2 fill:#ffcdd2,stroke:#c62828,color:#333333
+    style P0_3 fill:#ffcdd2,stroke:#c62828,color:#333333
+    style P0_4 fill:#ffcdd2,stroke:#c62828,color:#333333
+    style P1_1 fill:#ffe0b2,stroke:#ef6c00,color:#333333
+    style P1_2 fill:#ffe0b2,stroke:#ef6c00,color:#333333
+    style P1_3 fill:#ffe0b2,stroke:#ef6c00,color:#333333
+    style P1_4 fill:#ffe0b2,stroke:#ef6c00,color:#333333
+    style P2_1 fill:#c8e6c9,stroke:#2e7d32,color:#333333
+    style P2_2 fill:#c8e6c9,stroke:#2e7d32,color:#333333
+    style P2_3 fill:#c8e6c9,stroke:#2e7d32,color:#333333
+    style P2_4 fill:#c8e6c9,stroke:#2e7d32,color:#333333
+    style P2_5 fill:#c8e6c9,stroke:#2e7d32,color:#333333

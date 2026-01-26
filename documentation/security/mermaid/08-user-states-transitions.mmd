@@ -1,0 +1,34 @@
+stateDiagram-v2
+    [*] --> Active: CreateUser
+
+    Active --> Locked: LockUser
+    Locked --> Active: UnlockUser
+
+    Active --> ContractExpired: Contract expired
+    ContractExpired --> Active: ExtendContract
+
+    Locked --> Deleted: DeleteUser
+    ContractExpired --> Deleted: DeleteUser
+
+    Deleted --> [*]
+
+    note right of Active
+        AccountStatus: ACTIVE
+        ━━━━━━━━━━━━━━━━━
+        Can login and
+        use the system
+    end note
+
+    note right of Locked
+        AccountStatus: LOCKED
+        ━━━━━━━━━━━━━━━━━
+        Blocked by admin
+        UserStatusFilter rejects
+    end note
+
+    note right of ContractExpired
+        AccountStatus: EXPIRED
+        ━━━━━━━━━━━━━━━━━
+        Contract ended
+        UserStatusFilter rejects
+    end note

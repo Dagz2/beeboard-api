@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph Rules[" "]
+        direction LR
+        R1["🚫 RULE 1: NO SELF-MODIFICATION: A user cannot modify their own role"]
+        R2["📊 RULE 2: STRICT HIERARCHY: TIER_N can only manage TIER_N+1 and below"]
+        R3["🔒 RULE 3: SYSTEM PROTECTION: Resources with isSystem=true cannot be deleted"]
+        R4["📝 RULE 4: IMMUTABLE AUDIT: Logs cannot be modified via PostgreSQL trigger"]
+    end
+
+    R1 --> R2
+    R2 --> R3
+    R3 --> R4
+
+    style R1 fill:#c62828,stroke:#b71c1c,color:#ffffff,stroke-width:2px
+    style R2 fill:#ef6c00,stroke:#e65100,color:#ffffff,stroke-width:2px
+    style R3 fill:#2e7d32,stroke:#1b5e20,color:#ffffff,stroke-width:2px
+    style R4 fill:#1565c0,stroke:#0d47a1,color:#ffffff,stroke-width:2px
+    style Rules fill:transparent,stroke:transparent

@@ -1,0 +1,115 @@
+classDiagram
+    direction TB
+
+    class UserRepository {
+        <<Interface>>
+    }
+
+    class UserRepositoryImpl {
+        <<Implementation>>
+        -EntityManager entityManager
+        +save(User) void
+        +update(User) void
+        +findById(UserId) Optional~User~
+        +findByEmail(EmailAddress) Optional~User~
+        +findAll() List~User~
+        +delete(UserId) void
+        +existsByEmail(EmailAddress) boolean
+        -toDomain(UserEntity) User
+        -toEntity(User) UserEntity
+    }
+
+    class RoleRepository {
+        <<Interface>>
+    }
+
+    class RoleRepositoryImpl {
+        <<Implementation>>
+        -EntityManager entityManager
+        +save(Role) void
+        +update(Role) void
+        +findById(RoleId) Optional~Role~
+        +findByCode(RoleCode) Optional~Role~
+        +findAll() List~Role~
+        +delete(RoleId) void
+        -toDomain(RoleEntity) Role
+        -toEntity(Role) RoleEntity
+    }
+
+    class PermissionRepository {
+        <<Interface>>
+    }
+
+    class PermissionRepositoryImpl {
+        <<Implementation>>
+        -EntityManager entityManager
+        +save(Permission) void
+        +update(Permission) void
+        +findById(PermissionId) Optional~Permission~
+        +findByCode(PermissionCode) Optional~Permission~
+        +findAll() List~Permission~
+        +findAllByIds(Set~PermissionId~) List~Permission~
+        +delete(PermissionId) void
+        -toDomain(PermissionEntity) Permission
+        -toEntity(Permission) PermissionEntity
+    }
+
+    class AuditLogRepository {
+        <<Interface>>
+    }
+
+    class AuditLogRepositoryImpl {
+        <<Implementation>>
+        -EntityManager entityManager
+        +save(AuditLog) void
+        +findById(AuditLogId) Optional~AuditLog~
+        +findByActorId(UserId) List~AuditLog~
+        +findByAction(String) List~AuditLog~
+        +findAll() List~AuditLog~
+        -toDomain(AuditLogEntity) AuditLog
+        -toEntity(AuditLog) AuditLogEntity
+    }
+
+    class PasswordResetRequestRepository {
+        <<Interface>>
+    }
+
+    class PasswordResetRequestRepositoryImpl {
+        <<Implementation>>
+        -EntityManager entityManager
+        +save(PasswordResetRequest) void
+        +update(PasswordResetRequest) void
+        +findByToken(String) Optional~PasswordResetRequest~
+        +invalidateAllForUser(UserId) void
+        +deleteExpiredTokens() void
+        -toDomain(PasswordResetRequestEntity) PasswordResetRequest
+        -toEntity(PasswordResetRequest) PasswordResetRequestEntity
+    }
+
+    class RateLimitRepository {
+        <<Interface>>
+    }
+
+    class RateLimitRepositoryImpl {
+        <<Implementation>>
+        -EntityManager entityManager
+        +findByEmail(String) Optional~RateLimit~
+        +save(RateLimit) void
+        +deleteExpired(Instant) long
+        -toDomain(RateLimitEntity) RateLimit
+        -toEntity(RateLimit) RateLimitEntity
+    }
+
+    UserRepository <|.. UserRepositoryImpl
+    RoleRepository <|.. RoleRepositoryImpl
+    PermissionRepository <|.. PermissionRepositoryImpl
+    AuditLogRepository <|.. AuditLogRepositoryImpl
+    PasswordResetRequestRepository <|.. PasswordResetRequestRepositoryImpl
+    RateLimitRepository <|.. RateLimitRepositoryImpl
+
+    UserRepositoryImpl ..> UserEntity : maps
+    RoleRepositoryImpl ..> RoleEntity : maps
+    PermissionRepositoryImpl ..> PermissionEntity : maps
+    AuditLogRepositoryImpl ..> AuditLogEntity : maps
+    PasswordResetRequestRepositoryImpl ..> PasswordResetRequestEntity : maps
+    RateLimitRepositoryImpl ..> RateLimitEntity : maps

@@ -1,0 +1,83 @@
+classDiagram
+    class SecurityTier {
+        <<enumeration>>
+        TIER_0 : Critical
+        TIER_1 : Sensitive
+        TIER_2 : Standard
+        +canManage(SecurityTier) boolean
+        +isAtLeast(SecurityTier) boolean
+    }
+
+    class SecurityContext {
+        -UserId actorId
+        -String actorEmail
+        -RoleId roleId
+        -RoleCode roleCode
+        -SecurityTier actorTier
+        -Set~PermissionCode~ permissions
+        +hasPermission(String) boolean
+        +isSuperAdmin() boolean
+        +canManageTier(SecurityTier) boolean
+    }
+
+    class PrivilegeEscalationGuard {
+        +validateNotSelfModification(UserId, UserId)
+        +validateRoleAssignment(SecurityTier, Role)
+        +validatePermissionGrant(SecurityTier, Permission)
+        +validateSystemRoleModification(SecurityTier, Role)
+        +validateRoleDeletion(Role)
+        +validatePermissionDeletion(Permission)
+    }
+
+    class AuditService {
+        -AuditLogRepository repository
+        -RoutingContext routingContext
+        +record(SecurityContext, String, String, String, String, String)
+    }
+
+    class AuditLog {
+        -AuditLogId id
+        -Instant occurredAt
+        -UserId actorId
+        -String actorEmail
+        -SecurityTier actorTier
+        -String action
+        -String targetType
+        -String targetId
+        -String oldValue
+        -String newValue
+        -String ipAddress
+        -String userAgent
+    }
+
+    class PermissionInterceptor {
+        -SecurityContextCache cache
+        +checkPermission(InvocationContext) Object
+        -getAnnotation(InvocationContext) RequiresPermission
+        -checkAccess(Set, String[], LogicalOperator) boolean
+    }
+
+    class SecurityContextCache {
+        -JsonWebToken jwt
+        -UserRepository userRepository
+        -RoleRepository roleRepository
+        -PermissionRepository permissionRepository
+        +getCurrentContext() SecurityContext
+        +loadContext(UUID) SecurityContext
+        +invalidate(UUID) void
+        +invalidateByRole(RoleId) void
+    }
+
+    class RequiresPermission {
+        <<annotation>>
+        +value() String[]
+        +operator() LogicalOperator
+    }
+
+    SecurityContext --> SecurityTier
+    PrivilegeEscalationGuard --> SecurityTier
+    AuditService --> AuditLog
+    AuditLog --> SecurityTier
+    PermissionInterceptor ..> RequiresPermission
+    PermissionInterceptor --> SecurityContextCache
+    SecurityContextCache --> SecurityContext

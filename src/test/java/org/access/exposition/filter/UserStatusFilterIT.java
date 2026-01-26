@@ -34,8 +34,29 @@ class UserStatusFilterIT {
     @Inject
     RoleRepository roleRepository;
 
+    @Inject
+    TransactionalHelper transactionalHelper;
+
     private static RoleId testRoleId;
     private static boolean setupComplete = false;
+
+    // Helper class to perform transactional operations
+    @jakarta.enterprise.context.ApplicationScoped
+    static class TransactionalHelper {
+        @Inject
+        UserRepository userRepository;
+
+        @Transactional
+        public UserId saveUser(User user) {
+            userRepository.save(user);
+            return user.getId();
+        }
+
+        @Transactional
+        public void deleteUser(UserId userId) {
+            userRepository.deleteById(userId);
+        }
+    }
 
     @BeforeEach
     @Transactional
@@ -58,7 +79,6 @@ class UserStatusFilterIT {
 
         @Test
         @Order(1)
-        @Transactional
         @DisplayName("should allow request for active user with valid contract")
         void shouldAllowRequestForActiveUser() {
             // Given - an active user with valid contract
@@ -68,7 +88,7 @@ class UserStatusFilterIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(activeUser);
+            transactionalHelper.saveUser(activeUser);
 
             String token = aToken()
                 .forUser(activeUser.getId())
@@ -85,7 +105,7 @@ class UserStatusFilterIT {
                 .statusCode(200);
 
             // Cleanup
-            userRepository.deleteById(activeUser.getId());
+            transactionalHelper.deleteUser(activeUser.getId());
         }
     }
 
@@ -95,7 +115,6 @@ class UserStatusFilterIT {
 
         @Test
         @Order(2)
-        @Transactional
         @DisplayName("should reject request with 403 for locked user")
         void shouldReject403ForLockedUser() {
             // Given - a locked user
@@ -105,7 +124,7 @@ class UserStatusFilterIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .locked()
                 .build();
-            userRepository.save(lockedUser);
+            transactionalHelper.saveUser(lockedUser);
 
             String token = aToken()
                 .forUser(lockedUser.getId())
@@ -123,7 +142,7 @@ class UserStatusFilterIT {
                 .body("message", containsString("locked"));
 
             // Cleanup
-            userRepository.deleteById(lockedUser.getId());
+            transactionalHelper.deleteUser(lockedUser.getId());
         }
     }
 
@@ -133,7 +152,6 @@ class UserStatusFilterIT {
 
         @Test
         @Order(3)
-        @Transactional
         @DisplayName("should reject request with 403 for expired contract")
         void shouldReject403ForExpiredContract() {
             // Given - a user with expired contract
@@ -143,7 +161,7 @@ class UserStatusFilterIT {
                 .withExpiredContract()
                 .unlocked()
                 .build();
-            userRepository.save(expiredUser);
+            transactionalHelper.saveUser(expiredUser);
 
             String token = aToken()
                 .forUser(expiredUser.getId())
@@ -161,7 +179,7 @@ class UserStatusFilterIT {
                 .body("message", containsString("expired"));
 
             // Cleanup
-            userRepository.deleteById(expiredUser.getId());
+            transactionalHelper.deleteUser(expiredUser.getId());
         }
     }
 

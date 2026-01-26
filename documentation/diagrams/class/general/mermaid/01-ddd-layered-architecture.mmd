@@ -1,0 +1,50 @@
+block-beta
+    columns 1
+
+    block:EXPO:1
+        columns 4
+        E0["EXPOSITION LAYER\n(Entry points & Security)"]
+        E1["AccessRessource"]
+        E2["AuthenticationRessource"]
+        E3["PermissionInterceptor"]
+    end
+
+    space
+
+    block:APP:1
+        columns 4
+        A0["APPLICATION LAYER\n(Use Cases & Orchestration)"]
+        A1["Commands:\nCreateUser, LockUser\nGrantPermission..."]
+        A2["Queries:\nUserQueryService\nRoleQueryService"]
+        A3["Services:\nSecurityContextService\nUserStatusService\nAuditService, JwtService"]
+    end
+
+    space
+
+    block:DOMAIN:1
+        columns 5
+        D0["DOMAIN LAYER\n(Business Logic & Rules)"]
+        D1["Aggregates:\nUser, Role\nPermission, AuditLog"]
+        D2["Value Objects:\nUserId, EmailAddress\nPassword, SecurityTier"]
+        D3["Domain Services:\nPrivilegeEscalationGuard"]
+        D4["Repository Interfaces:\nUserRepository\nRoleRepository"]
+    end
+
+    space
+
+    block:INFRA:1
+        columns 4
+        I0["INFRASTRUCTURE LAYER\n(Technical Implementation)"]
+        I1["JPA Entities:\nUserEntity\nRoleEntity"]
+        I2["Repository Impls:\nUserRepositoryImpl\nRoleRepositoryImpl"]
+        I3["External:\nPostgreSQL\nSMTP Server"]
+    end
+
+    EXPO --> APP
+    APP --> DOMAIN
+    INFRA --> DOMAIN
+
+    style E0 fill:#1565c0,color:#ffffff
+    style A0 fill:#ef6c00,color:#ffffff
+    style D0 fill:#2e7d32,color:#ffffff
+    style I0 fill:#c2185b,color:#ffffff

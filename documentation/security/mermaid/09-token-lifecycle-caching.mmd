@@ -1,0 +1,27 @@
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant PI as PermissionInterceptor
+    participant SCC as SecurityContextCache
+    participant CACHE as Caffeine Cache
+    participant DB as PostgreSQL
+
+    C->>PI: HTTP Request with JWT
+    PI->>SCC: getCurrentContext()
+    SCC->>SCC: Extract userId from JWT
+
+    alt Cache HIT
+        SCC->>CACHE: loadContext(userId)
+        CACHE-->>SCC: SecurityContext (cached)
+        Note over CACHE: 0 DB queries
+    else Cache MISS
+        SCC->>CACHE: loadContext(userId)
+        CACHE->>DB: SELECT user, role, permissions
+        DB-->>CACHE: User + Role + Permissions
+        CACHE-->>SCC: SecurityContext (new)
+        Note over CACHE: 3 DB queries, cached 15min
+    end
+
+    SCC-->>PI: SecurityContext
+    PI->>PI: Check permissions
+    PI-->>C: Allow/Deny

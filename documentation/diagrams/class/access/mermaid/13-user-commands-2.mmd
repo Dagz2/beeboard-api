@@ -1,0 +1,39 @@
+classDiagram
+    direction TB
+
+    class ExtendContract {
+        <<Use Case>>
+        -UserRepository userRepository
+        -RoleRepository roleRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(ExtendContractCommand, SecurityContext) void
+    }
+
+    class TerminateContract {
+        <<Use Case>>
+        -UserRepository userRepository
+        -RoleRepository roleRepository
+        -PrivilegeEscalationGuard privilegeGuard
+        -AuditService auditService
+        +execute(TerminateContractCommand, SecurityContext) void
+    }
+
+    class ChangePassword {
+        <<Use Case>>
+        -UserRepository userRepository
+        -AuditService auditService
+        +execute(ChangePasswordCommand, SecurityContext) void
+    }
+
+    class ChangeFullName {
+        <<Use Case>>
+        -UserRepository userRepository
+        +execute(ChangeFullNameCommand) void
+    }
+
+    class ChangeMail {
+        <<Use Case>>
+        -UserRepository userRepository
+        +execute(ChangeMailCommand) void
+    }

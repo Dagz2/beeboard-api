@@ -1,0 +1,24 @@
+flowchart LR
+    subgraph AccessBC["Access BC<br/>(Source of Truth)"]
+        PL["Published Language<br/>━━━━━━━━━━━━━━━<br/>ApplicationRole<br/>• ADMIN<br/>• SUPERVISOR<br/>• MANAGER<br/>• MEMBER<br/>• GUEST"]
+        EVENT["Domain Events<br/>━━━━━━━━━━━━━━━<br/>UserCreatedEvent<br/>UserRoleChangedEvent<br/>..."]
+    end
+
+    subgraph ACL["Anti-Corruption Layer<br/>(Translation Boundary)"]
+        UEH["UserEventHandler<br/>━━━━━━━━━━━━━━━<br/>translateToAccessLevel<br/><br/>ADMIN, SUPERVISOR → SUPERVISOR<br/>MANAGER → MODERATOR<br/>MEMBER → COMMENTER<br/>GUEST → VIEWER"]
+    end
+
+    subgraph NoteBC["Note BC<br/>(Independent Vocabulary)"]
+        AL["AccessLevel<br/>━━━━━━━━━━━━━━━<br/>• SUPERVISOR<br/>• MODERATOR<br/>• COMMENTER<br/>• VIEWER"]
+        AV[(author_view<br/>CQRS read model)]
+    end
+
+    PL --> EVENT
+    EVENT -->|"@ObservesAsync"| UEH
+    UEH -->|"Translated"| AL
+    AL --> AV
+
+    style AccessBC fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    style ACL fill:#fff3e0,stroke:#ff9800,stroke-width:3px
+    style NoteBC fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    style UEH fill:#ffb74d,stroke:#f57c00,stroke-width:2px

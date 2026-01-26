@@ -1,0 +1,78 @@
+classDiagram
+    direction TB
+
+    class AccessRessource {
+        <<REST Controller>>
+        -CreateUser createUser
+        -AssignNewRole assignNewRole
+        -LockUser lockUser
+        -UnlockUser unlockUser
+        -DeleteUser deleteUser
+        -ExtendContract extendContract
+        -TerminateContract terminateContract
+        -UserQueryService userQueryService
+        -CreateRole createRole
+        -UpdateRole updateRole
+        -DeleteRole deleteRole
+        -GrantPermission grantPermission
+        -RevokePermissionFromRole revokePermission
+        -RoleQueryService roleQueryService
+        -CreatePermission createPermission
+        -UpdatePermission updatePermission
+        -DeletePermission deletePermission
+        -PermissionQueryService permissionQueryService
+        -SecurityContextService securityContextService
+        +createUser(CreateUserRequest) Response
+        +getUsers() Response
+        +getUserById(UUID) Response
+        +assignRole(UUID, AssignRoleRequest) Response
+        +lockUser(UUID) Response
+        +unlockUser(UUID) Response
+        +deleteUser(UUID) Response
+        +extendContract(UUID, ExtendContractRequest) Response
+        +terminateContract(UUID) Response
+        +createRole(CreateRoleRequest) Response
+        +getRoles() Response
+        +getRoleById(UUID) Response
+        +updateRole(UUID, UpdateRoleRequest) Response
+        +deleteRole(UUID) Response
+        +grantPermission(UUID, GrantPermissionRequest) Response
+        +revokePermission(UUID, UUID) Response
+        +createPermission(CreatePermissionRequest) Response
+        +getPermissions() Response
+        +getPermissionById(UUID) Response
+        +updatePermission(UUID, UpdatePermissionRequest) Response
+        +deletePermission(UUID) Response
+    }
+
+    class AuthenticationRessource {
+        <<REST Controller>>
+        -AuthenticateUser authenticateUser
+        -RequestPasswordReset requestPasswordReset
+        -CompletePasswordReset completePasswordReset
+        -GetCurrentUserProfile getCurrentUserProfile
+        -SecurityContextService securityContextService
+        +login(LoginRequest) Response
+        +requestPasswordReset(PasswordResetRequest) Response
+        +completePasswordReset(CompleteResetRequest) Response
+        +getCurrentProfile() Response
+    }
+
+    AccessRessource ..> SecurityContextService
+    AccessRessource ..> CreateUser
+    AccessRessource ..> AssignNewRole
+    AccessRessource ..> LockUser
+    AccessRessource ..> UnlockUser
+    AccessRessource ..> DeleteUser
+    AccessRessource ..> CreateRole
+    AccessRessource ..> UpdateRole
+    AccessRessource ..> DeleteRole
+    AccessRessource ..> CreatePermission
+    AccessRessource ..> UpdatePermission
+    AccessRessource ..> DeletePermission
+
+    AuthenticationRessource ..> SecurityContextService
+    AuthenticationRessource ..> AuthenticateUser
+    AuthenticationRessource ..> RequestPasswordReset
+    AuthenticationRessource ..> CompletePasswordReset
+    AuthenticationRessource ..> GetCurrentUserProfile

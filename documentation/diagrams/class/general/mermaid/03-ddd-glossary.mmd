@@ -1,0 +1,16 @@
+flowchart LR
+    subgraph Aggregate
+        AR[Aggregate Root, also an Entity] --> VO1[Value Object]
+        AR --> VO2[Value Object]
+        AR --> E[Entity]
+    end
+
+    Repo[Repository Interface] -.-> AR
+    DS[Domain Service] -.-> AR
+
+    style AR fill:#4caf50,color:#fff
+    style VO1 fill:#2196f3,color:#fff
+    style VO2 fill:#2196f3,color:#fff
+    style E fill:#ff9800,color:#fff
+    style Repo fill:#9c27b0,color:#fff
+    style DS fill:#607d8b,color:#fff

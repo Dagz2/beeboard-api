@@ -2,6 +2,7 @@ package org.access.exposition;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.access.domain.model.*;
 import org.access.domain.repository.PermissionRepository;
@@ -37,6 +38,12 @@ class UserManagementIT {
     @Inject
     PermissionRepository permissionRepository;
 
+    @Inject
+    EntityManager entityManager;
+
+    @Inject
+    TransactionalHelper transactionalHelper;
+
     private static RoleId tier0RoleId;
     private static RoleId tier1RoleId;
     private static RoleId tier2RoleId;
@@ -48,10 +55,27 @@ class UserManagementIT {
     private static PermissionId assignBasicRolesPermId;
     private static boolean setupComplete = false;
 
-    @BeforeEach
-    @Transactional
-    void setup() {
-        if (!setupComplete) {
+    // Helper class to perform transactional operations
+    @jakarta.enterprise.context.ApplicationScoped
+    static class TransactionalHelper {
+        @Inject
+        UserRepository userRepository;
+
+        @Transactional(Transactional.TxType.REQUIRES_NEW)
+        public UserId saveUser(User user) {
+            userRepository.save(user);
+            return user.getId();
+        }
+
+        @Transactional(Transactional.TxType.REQUIRES_NEW)
+        public void deleteUser(UserId userId) {
+            userRepository.deleteById(userId);
+        }
+
+        @Transactional(Transactional.TxType.REQUIRES_NEW)
+        public void setupRolesAndPermissions(PermissionRepository permissionRepository,
+                                              RoleRepository roleRepository,
+                                              EntityManager entityManager) {
             // Create permissions
             Permission userCreate = aPermission().withCode("USER_CREATE").withName("Create User").withTier(SecurityTier.TIER_1).build();
             Permission userLock = aPermission().withCode("USER_LOCK").withName("Lock User").withTier(SecurityTier.TIER_1).build();
@@ -66,6 +90,9 @@ class UserManagementIT {
             permissionRepository.save(userDelete);
             permissionRepository.save(userViewAll);
             permissionRepository.save(assignBasic);
+
+            // Force flush to persist permissions before creating roles
+            entityManager.flush();
 
             userCreatePermId = userCreate.id();
             userLockPermId = userLock.id();
@@ -109,6 +136,17 @@ class UserManagementIT {
         }
     }
 
+    @BeforeEach
+    void setup() {
+        if (!setupComplete) {
+            transactionalHelper.setupRolesAndPermissions(
+                permissionRepository,
+                roleRepository,
+                entityManager
+            );
+        }
+    }
+
     // ==================== Create User Tests ====================
 
     @Nested
@@ -127,7 +165,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(admin);
+            transactionalHelper.saveUser(admin);
 
             String token = aToken()
                 .forUser(admin.getId())
@@ -156,7 +194,7 @@ class UserManagementIT {
                 .body("id", notNullValue());
 
             // Cleanup
-            userRepository.deleteById(admin.getId());
+            transactionalHelper.deleteUser(admin.getId());
         }
 
         @Test
@@ -171,7 +209,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(viewer);
+            transactionalHelper.saveUser(viewer);
 
             String token = aToken()
                 .forUser(viewer.getId())
@@ -199,129 +237,142 @@ class UserManagementIT {
                 .statusCode(403);
 
             // Cleanup
-            userRepository.deleteById(viewer.getId());
+            transactionalHelper.deleteUser(viewer.getId());
         }
     }
 
     // ==================== Lock/Unlock User Tests ====================
 
-    @Nested
-    @DisplayName("Lock/Unlock User (PUT /users/{id}/lock, /unlock)")
-    class LockUnlockUserEndpoint {
+    @Test
+    @Order(3)
+    @Transactional
+    @DisplayName("should lock user with USER_LOCK permission")
+    void testLockUserWithPermission() {
+        // Given - admin and target user
+        User admin = aUser()
+            .withEmail("admin-lock@example.com")
+            .withRoleId(tier1RoleId)
+            .withContractEndDate(LocalDate.now().plusYears(1))
+            .unlocked()
+            .build();
+        transactionalHelper.saveUser(admin);
 
-        @Test
-        @Order(3)
-        @Transactional
-        @DisplayName("should lock user with USER_LOCK permission")
-        void shouldLockUserWithUserLockPermission() {
-            // Given - admin and target user
-            User admin = aUser()
-                .withEmail("admin-lock@example.com")
-                .withRoleId(tier1RoleId)
-                .withContractEndDate(LocalDate.now().plusYears(1))
-                .unlocked()
-                .build();
-            userRepository.save(admin);
+        User target = aUser()
+            .withEmail("target-lock@example.com")
+            .withRoleId(tier2RoleId)
+            .withContractEndDate(LocalDate.now().plusYears(1))
+            .unlocked()
+            .build();
+        transactionalHelper.saveUser(target);
 
-            User target = aUser()
-                .withEmail("target-lock@example.com")
-                .withRoleId(tier2RoleId)
-                .withContractEndDate(LocalDate.now().plusYears(1))
-                .unlocked()
-                .build();
-            userRepository.save(target);
+        String token = aToken()
+            .forUser(admin.getId())
+            .withEmail(admin.getEmail().value())
+            .withRole("USER_MGMT_DIRECTOR")
+            .build();
 
-            String token = aToken()
-                .forUser(admin.getId())
-                .withEmail(admin.getEmail().value())
-                .withRole("USER_MGMT_DIRECTOR")
-                .build();
+        // When/Then - lock should succeed
+        given()
+            .header("Authorization", "Bearer " + token)
+            .contentType("application/json")
+            .body(String.format("""
+                {
+                    "userId": "%s"
+                }
+                """, target.getId().id()))
+        .when()
+            .put(ACCESS_PATH + "/users/" + target.getId().id() + "/lock")
+        .then()
+            .statusCode(200);
 
-            // When/Then - lock should succeed
-            given()
-                .header("Authorization", "Bearer " + token)
-            .when()
-                .put(ACCESS_PATH + "/users/" + target.getId().id() + "/lock")
-            .then()
-                .statusCode(200);
+        // Cleanup
+        transactionalHelper.deleteUser(admin.getId());
+        transactionalHelper.deleteUser(target.getId());
+    }
 
-            // Cleanup
-            userRepository.deleteById(admin.getId());
-            userRepository.deleteById(target.getId());
-        }
+    @Test
+    @Order(4)
+    @Transactional
+    @DisplayName("should unlock user with USER_LOCK permission")
+    void testUnlockUserWithPermission() {
+        // Given - admin and locked target user
+        User admin = aUser()
+            .withEmail("admin-unlock@example.com")
+            .withRoleId(tier1RoleId)
+            .withContractEndDate(LocalDate.now().plusYears(1))
+            .unlocked()
+            .build();
+        transactionalHelper.saveUser(admin);
 
-        @Test
-        @Order(4)
-        @Transactional
-        @DisplayName("should unlock user with USER_LOCK permission")
-        void shouldUnlockUserWithUserLockPermission() {
-            // Given - admin and locked target user
-            User admin = aUser()
-                .withEmail("admin-unlock@example.com")
-                .withRoleId(tier1RoleId)
-                .withContractEndDate(LocalDate.now().plusYears(1))
-                .unlocked()
-                .build();
-            userRepository.save(admin);
+        User target = aUser()
+            .withEmail("target-unlock@example.com")
+            .withRoleId(tier2RoleId)
+            .withContractEndDate(LocalDate.now().plusYears(1))
+            .locked()
+            .build();
+        transactionalHelper.saveUser(target);
 
-            User target = aUser()
-                .withEmail("target-unlock@example.com")
-                .withRoleId(tier2RoleId)
-                .withContractEndDate(LocalDate.now().plusYears(1))
-                .locked()
-                .build();
-            userRepository.save(target);
+        String token = aToken()
+            .forUser(admin.getId())
+            .withEmail(admin.getEmail().value())
+            .withRole("USER_MGMT_DIRECTOR")
+            .build();
 
-            String token = aToken()
-                .forUser(admin.getId())
-                .withEmail(admin.getEmail().value())
-                .withRole("USER_MGMT_DIRECTOR")
-                .build();
+        // When/Then - unlock should succeed
+        given()
+            .header("Authorization", "Bearer " + token)
+            .contentType("application/json")
+            .body(String.format("""
+                {
+                    "userId": "%s"
+                }
+                """, target.getId().id()))
+        .when()
+            .put(ACCESS_PATH + "/users/" + target.getId().id() + "/unlock")
+        .then()
+            .statusCode(200);
 
-            // When/Then - unlock should succeed
-            given()
-                .header("Authorization", "Bearer " + token)
-            .when()
-                .put(ACCESS_PATH + "/users/" + target.getId().id() + "/unlock")
-            .then()
-                .statusCode(200);
+        // Cleanup
+        transactionalHelper.deleteUser(admin.getId());
+        transactionalHelper.deleteUser(target.getId());
+    }
 
-            // Cleanup
-            userRepository.deleteById(admin.getId());
-            userRepository.deleteById(target.getId());
-        }
+    @Test
+    @Order(5)
+    @Transactional
+    @DisplayName("should prevent self-lock")
+    void testPreventSelfLock() {
+        // Given - a user trying to lock themselves
+        User admin = aUser()
+            .withEmail("admin-selflock@example.com")
+            .withRoleId(tier1RoleId)
+            .withContractEndDate(LocalDate.now().plusYears(1))
+            .unlocked()
+            .build();
+        transactionalHelper.saveUser(admin);
 
-        @Test
-        @Order(5)
-        @Transactional
-        @DisplayName("should prevent self-lock")
-        void shouldPreventSelfLock() {
-            // Given - a user trying to lock themselves
-            User admin = aUser()
-                .withEmail("admin-selflock@example.com")
-                .withRoleId(tier1RoleId)
-                .withContractEndDate(LocalDate.now().plusYears(1))
-                .unlocked()
-                .build();
-            userRepository.save(admin);
+        String token = aToken()
+            .forUser(admin.getId())
+            .withEmail(admin.getEmail().value())
+            .withRole("USER_MGMT_DIRECTOR")
+            .build();
 
-            String token = aToken()
-                .forUser(admin.getId())
-                .withEmail(admin.getEmail().value())
-                .withRole("USER_MGMT_DIRECTOR")
-                .build();
+        // When/Then - self-lock should fail
+        given()
+            .header("Authorization", "Bearer " + token)
+            .contentType("application/json")
+            .body(String.format("""
+                {
+                    "userId": "%s"
+                }
+                """, admin.getId().id()))
+        .when()
+            .put(ACCESS_PATH + "/users/" + admin.getId().id() + "/lock")
+        .then()
+            .statusCode(anyOf(is(400), is(403)));
 
-            // When/Then - self-lock should fail
-            given()
-                .header("Authorization", "Bearer " + token)
-            .when()
-                .put(ACCESS_PATH + "/users/" + admin.getId().id() + "/lock")
-            .then()
-                .statusCode(anyOf(is(400), is(403)));
-
-            // Cleanup
-            userRepository.deleteById(admin.getId());
-        }
+        // Cleanup
+        transactionalHelper.deleteUser(admin.getId());
     }
 
     // ==================== Role Assignment Tests ====================
@@ -342,7 +393,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(admin);
+            transactionalHelper.saveUser(admin);
 
             User target = aUser()
                 .withEmail("target-assign@example.com")
@@ -350,7 +401,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(target);
+            transactionalHelper.saveUser(target);
 
             String token = aToken()
                 .forUser(admin.getId())
@@ -373,8 +424,8 @@ class UserManagementIT {
                 .statusCode(200);
 
             // Cleanup
-            userRepository.deleteById(admin.getId());
-            userRepository.deleteById(target.getId());
+            transactionalHelper.deleteUser(admin.getId());
+            transactionalHelper.deleteUser(target.getId());
         }
 
         @Test
@@ -389,7 +440,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(admin);
+            transactionalHelper.saveUser(admin);
 
             String token = aToken()
                 .forUser(admin.getId())
@@ -412,7 +463,7 @@ class UserManagementIT {
                 .statusCode(anyOf(is(400), is(403)));
 
             // Cleanup
-            userRepository.deleteById(admin.getId());
+            transactionalHelper.deleteUser(admin.getId());
         }
     }
 
@@ -434,7 +485,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(admin);
+            transactionalHelper.saveUser(admin);
 
             User target = aUser()
                 .withEmail("target-delete@example.com")
@@ -442,7 +493,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .locked() // Must be locked first
                 .build();
-            userRepository.save(target);
+            transactionalHelper.saveUser(target);
 
             String token = aToken()
                 .forUser(admin.getId())
@@ -459,7 +510,7 @@ class UserManagementIT {
                 .statusCode(204);
 
             // Cleanup
-            userRepository.deleteById(admin.getId());
+            transactionalHelper.deleteUser(admin.getId());
         }
 
         @Test
@@ -474,7 +525,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(admin);
+            transactionalHelper.saveUser(admin);
 
             User target = aUser()
                 .withEmail("target-delete-fail@example.com")
@@ -482,7 +533,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked() // Not locked
                 .build();
-            userRepository.save(target);
+            transactionalHelper.saveUser(target);
 
             String token = aToken()
                 .forUser(admin.getId())
@@ -499,8 +550,8 @@ class UserManagementIT {
                 .statusCode(400);
 
             // Cleanup
-            userRepository.deleteById(admin.getId());
-            userRepository.deleteById(target.getId());
+            transactionalHelper.deleteUser(admin.getId());
+            transactionalHelper.deleteUser(target.getId());
         }
 
         @Test
@@ -515,7 +566,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .locked() // Even if locked
                 .build();
-            userRepository.save(admin);
+            transactionalHelper.saveUser(admin);
 
             String token = aToken()
                 .forUser(admin.getId())
@@ -532,7 +583,7 @@ class UserManagementIT {
                 .statusCode(anyOf(is(400), is(403)));
 
             // Cleanup
-            userRepository.deleteById(admin.getId());
+            transactionalHelper.deleteUser(admin.getId());
         }
     }
 
@@ -554,7 +605,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(admin);
+            transactionalHelper.saveUser(admin);
 
             User target = aUser()
                 .withEmail("target-update-name@example.com")
@@ -562,7 +613,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(target);
+            transactionalHelper.saveUser(target);
 
             String token = aToken()
                 .forUser(admin.getId())
@@ -586,8 +637,8 @@ class UserManagementIT {
                 .statusCode(200);
 
             // Cleanup
-            userRepository.deleteById(admin.getId());
-            userRepository.deleteById(target.getId());
+            transactionalHelper.deleteUser(admin.getId());
+            transactionalHelper.deleteUser(target.getId());
         }
 
         @Test
@@ -602,7 +653,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(admin);
+            transactionalHelper.saveUser(admin);
 
             User target = aUser()
                 .withEmail("target-extend@example.com")
@@ -610,7 +661,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusMonths(1))
                 .unlocked()
                 .build();
-            userRepository.save(target);
+            transactionalHelper.saveUser(target);
 
             String token = aToken()
                 .forUser(admin.getId())
@@ -633,8 +684,8 @@ class UserManagementIT {
                 .statusCode(200);
 
             // Cleanup
-            userRepository.deleteById(admin.getId());
-            userRepository.deleteById(target.getId());
+            transactionalHelper.deleteUser(admin.getId());
+            transactionalHelper.deleteUser(target.getId());
         }
     }
 
@@ -656,7 +707,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(viewer);
+            transactionalHelper.saveUser(viewer);
 
             String token = aToken()
                 .forUser(viewer.getId())
@@ -674,7 +725,7 @@ class UserManagementIT {
                 .body("$", not(empty()));
 
             // Cleanup
-            userRepository.deleteById(viewer.getId());
+            transactionalHelper.deleteUser(viewer.getId());
         }
 
         @Test
@@ -689,7 +740,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(viewer);
+            transactionalHelper.saveUser(viewer);
 
             User target = aUser()
                 .withEmail("target-byid@example.com")
@@ -697,7 +748,7 @@ class UserManagementIT {
                 .withContractEndDate(LocalDate.now().plusYears(1))
                 .unlocked()
                 .build();
-            userRepository.save(target);
+            transactionalHelper.saveUser(target);
 
             String token = aToken()
                 .forUser(viewer.getId())
@@ -715,8 +766,8 @@ class UserManagementIT {
                 .body("id", equalTo(target.getId().id().toString()));
 
             // Cleanup
-            userRepository.deleteById(viewer.getId());
-            userRepository.deleteById(target.getId());
+            transactionalHelper.deleteUser(viewer.getId());
+            transactionalHelper.deleteUser(target.getId());
         }
     }
 }

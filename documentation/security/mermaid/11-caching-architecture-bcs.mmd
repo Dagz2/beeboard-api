@@ -1,0 +1,25 @@
+flowchart TB
+    subgraph AccessBC["Access BC"]
+        SCC[SecurityContextCache<br/>Caffeine 15min TTL<br/>~1ms hit, ~50ms miss]
+        ACDB[(PostgreSQL<br/>users, roles, permissions)]
+        SCC --> ACDB
+    end
+
+    subgraph Events["Event-Driven Sync"]
+        EP[EventPublisher<br/>publishAsync]
+        CDI[CDI Event Bus]
+        EP --> CDI
+    end
+
+    subgraph NoteBC["Note BC"]
+        AV[(author_view<br/>CQRS read model<br/>&lt;5ms query)]
+        EH["UserEventHandler<br/>@ObservesAsync"]
+        CDI --> EH
+        EH --> AV
+    end
+
+    ACDB -->|"Domain events"| EP
+
+    style AccessBC fill:#e3f2fd,stroke:#2196f3
+    style Events fill:#fff3e0,stroke:#ff9800
+    style NoteBC fill:#f3e5f5,stroke:#9c27b0

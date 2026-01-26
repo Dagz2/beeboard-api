@@ -1,0 +1,62 @@
+stateDiagram-v2
+    [*] --> ACTIVE: CreateUser<br/>(isLocked=false, contract valid)
+
+    ACTIVE --> LOCKED: LockUser<br/>(isLocked=true)
+    LOCKED --> ACTIVE: UnlockUser<br/>(isLocked=false)
+
+    ACTIVE --> EXPIRED: Contract expires<br/>(contractEndDate < now)
+    EXPIRED --> ACTIVE: ExtendContract<br/>(contractEndDate > now)
+
+    LOCKED --> EXPIRED: Contract expires<br/>while locked
+    EXPIRED --> LOCKED: LockUser<br/>while expired
+
+    LOCKED --> DELETED: DeleteUser<br/>(GDPR compliance)
+    EXPIRED --> DELETED: DeleteUser<br/>(cleanup)
+    ACTIVE --> DELETED: DeleteUser<br/>(rare, admin action)
+
+    DELETED --> [*]
+
+    note right of ACTIVE
+        AccountStatus.ACTIVE
+        ━━━━━━━━━━━━━━━━━━━
+        Computed from:
+        • isLocked() == false
+        • !isContractExpired()
+
+        Can authenticate: ✓
+        Can access resources: ✓
+    end note
+
+    note right of LOCKED
+        AccountStatus.LOCKED
+        ━━━━━━━━━━━━━━━━━━━
+        Computed from:
+        • isLocked() == true
+        (highest priority)
+
+        Can authenticate: ✗
+        UserStatusFilter rejects
+    end note
+
+    note right of EXPIRED
+        AccountStatus.EXPIRED
+        ━━━━━━━━━━━━━━━━━━━
+        Computed from:
+        • isLocked() == false
+        • isContractExpired()
+
+        Can authenticate: ✗
+        UserStatusFilter rejects
+    end note
+
+    note right of DELETED
+        User removed from DB
+        ━━━━━━━━━━━━━━━━━━━
+        GDPR compliance
+        (right to be forgotten)
+    end note
+
+    style ACTIVE fill:#2e7d32,stroke:#1b5e20,color:#ffffff
+    style LOCKED fill:#c62828,stroke:#b71c1c,color:#ffffff
+    style EXPIRED fill:#ef6c00,stroke:#e65100,color:#ffffff
+    style DELETED fill:#424242,stroke:#212121,color:#ffffff

@@ -1,0 +1,21 @@
+flowchart TB
+    ADMIN["ADMIN<br/>━━━━━━━━━━━━━━━<br/>Full system access<br/>Technical administration<br/>System configuration"]
+
+    SUPERVISOR["SUPERVISOR<br/>━━━━━━━━━━━━━━━<br/>Read-all supervisory access<br/>Direction level<br/>View everything"]
+
+    MANAGER["MANAGER<br/>━━━━━━━━━━━━━━━<br/>Resource management<br/>Project managers, team leads<br/>Manage teams & resources"]
+
+    MEMBER["MEMBER<br/>━━━━━━━━━━━━━━━<br/>Standard user access<br/>Developers, employees<br/>Work on assigned resources"]
+
+    GUEST["GUEST<br/>━━━━━━━━━━━━━━━<br/>Limited read-only access<br/>Interns, contractors<br/>View assigned resources"]
+
+    ADMIN -->|"higher privileges"| SUPERVISOR
+    SUPERVISOR -->|"higher privileges"| MANAGER
+    MANAGER -->|"higher privileges"| MEMBER
+    MEMBER -->|"higher privileges"| GUEST
+
+    style ADMIN fill:#c62828,stroke:#b71c1c,color:#ffffff,stroke-width:3px
+    style SUPERVISOR fill:#ef6c00,stroke:#e65100,color:#ffffff,stroke-width:2px
+    style MANAGER fill:#f57c00,stroke:#e65100,color:#ffffff,stroke-width:2px
+    style MEMBER fill:#2e7d32,stroke:#1b5e20,color:#ffffff,stroke-width:1px
+    style GUEST fill:#1565c0,stroke:#0d47a1,color:#ffffff,stroke-width:1px

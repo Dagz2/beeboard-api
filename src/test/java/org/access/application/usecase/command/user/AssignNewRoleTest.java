@@ -78,6 +78,11 @@ class AssignNewRoleTest {
                 .withRoleId(oldRoleId)
                 .build();
 
+            Role oldRole = aRole()
+                .withId(oldRoleId)
+                .withTier(SecurityTier.TIER_2)
+                .build();
+
             Role newRole = aRole()
                 .withId(newRoleId)
                 .withTier(SecurityTier.TIER_2)
@@ -87,6 +92,7 @@ class AssignNewRoleTest {
                 .asDirector()
                 .build();
 
+            when(roleRepository.findById(oldRoleId)).thenReturn(Optional.of(oldRole));
             when(roleRepository.findById(newRoleId)).thenReturn(Optional.of(newRole));
             when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user));
 
@@ -230,6 +236,11 @@ class AssignNewRoleTest {
                 .withRoleId(oldRoleId)
                 .build();
 
+            Role oldRole = aRole()
+                .withId(oldRoleId)
+                .withTier(SecurityTier.TIER_2)
+                .build();
+
             Role newRole = aRole()
                 .withId(newRoleId)
                 .withTier(SecurityTier.TIER_2)
@@ -239,6 +250,7 @@ class AssignNewRoleTest {
                 .asDirector()
                 .build();
 
+            when(roleRepository.findById(oldRoleId)).thenReturn(Optional.of(oldRole));
             when(roleRepository.findById(newRoleId)).thenReturn(Optional.of(newRole));
             when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user));
 
@@ -267,6 +279,11 @@ class AssignNewRoleTest {
                 .withRoleId(oldRoleId)
                 .build();
 
+            Role oldRole = aRole()
+                .withId(oldRoleId)
+                .withTier(SecurityTier.TIER_2)
+                .build();
+
             Role newRole = aRole()
                 .withId(newRoleId)
                 .withTier(SecurityTier.TIER_2)
@@ -276,6 +293,7 @@ class AssignNewRoleTest {
                 .asDirector()
                 .build();
 
+            when(roleRepository.findById(oldRoleId)).thenReturn(Optional.of(oldRole));
             when(roleRepository.findById(newRoleId)).thenReturn(Optional.of(newRole));
             when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user));
 

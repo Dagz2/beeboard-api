@@ -107,7 +107,7 @@ class UpdateRoleApplicationRoleEventTest {
         // Then
         ArgumentCaptor<RoleApplicationRoleChangedEvent> eventCaptor =
             ArgumentCaptor.forClass(RoleApplicationRoleChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         RoleApplicationRoleChangedEvent event = eventCaptor.getValue();
         assertThat(event).isNotNull();
@@ -149,7 +149,7 @@ class UpdateRoleApplicationRoleEventTest {
         // Then
         ArgumentCaptor<RoleApplicationRoleChangedEvent> eventCaptor =
             ArgumentCaptor.forClass(RoleApplicationRoleChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         RoleApplicationRoleChangedEvent event = eventCaptor.getValue();
         assertThat(event.affectedUserIds()).isEmpty();
@@ -181,7 +181,7 @@ class UpdateRoleApplicationRoleEventTest {
         // Then
         ArgumentCaptor<RoleApplicationRoleChangedEvent> eventCaptor =
             ArgumentCaptor.forClass(RoleApplicationRoleChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         RoleApplicationRoleChangedEvent event = eventCaptor.getValue();
         assertThat(event.isEscalation()).isTrue();
@@ -213,7 +213,7 @@ class UpdateRoleApplicationRoleEventTest {
         // Then
         ArgumentCaptor<RoleApplicationRoleChangedEvent> eventCaptor =
             ArgumentCaptor.forClass(RoleApplicationRoleChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         RoleApplicationRoleChangedEvent event = eventCaptor.getValue();
         assertThat(event.isDegradation()).isTrue();
@@ -240,6 +240,6 @@ class UpdateRoleApplicationRoleEventTest {
 
         // Then - verify cache invalidation happens before event publication
         verify(securityContextService).invalidateByRole(any(RoleId.class));
-        verify(eventPublisher).publish(any(RoleApplicationRoleChangedEvent.class));
+        verify(eventPublisher).publishAsync(any(RoleApplicationRoleChangedEvent.class));
     }
 }

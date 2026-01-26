@@ -1,0 +1,43 @@
+classDiagram
+    direction TB
+
+    class UserQueryService {
+        <<Query Service>>
+        -UserRepository userRepository
+        +findById(UUID) UserResponse
+        +findAll() List~UserResponse~
+        +findByEmail(String) UserResponse
+    }
+
+    class RoleQueryService {
+        <<Query Service>>
+        -RoleRepository roleRepository
+        -PermissionRepository permissionRepository
+        +findById(UUID) RoleResponse
+        +findAll() List~RoleResponse~
+        +findByCode(String) RoleResponse
+    }
+
+    class PermissionQueryService {
+        <<Query Service>>
+        -PermissionRepository permissionRepository
+        +findById(UUID) PermissionResponse
+        +findAll() List~PermissionResponse~
+        +findByCode(String) PermissionResponse
+    }
+
+    class GetCurrentUserProfile {
+        <<Query>>
+        -UserRepository userRepository
+        -RoleRepository roleRepository
+        -PermissionRepository permissionRepository
+        +execute(UserId) UserProfileResponse
+    }
+
+    UserQueryService ..> UserRepository
+    RoleQueryService ..> RoleRepository
+    RoleQueryService ..> PermissionRepository
+    PermissionQueryService ..> PermissionRepository
+    GetCurrentUserProfile ..> UserRepository
+    GetCurrentUserProfile ..> RoleRepository
+    GetCurrentUserProfile ..> PermissionRepository

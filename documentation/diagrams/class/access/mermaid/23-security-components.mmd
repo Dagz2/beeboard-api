@@ -1,0 +1,40 @@
+classDiagram
+    direction TB
+
+    class RequiresPermission {
+        <<Annotation>>
+        +value() String[]
+        +operator() LogicalOperator
+    }
+
+    class LogicalOperator {
+        <<Enumeration>>
+        AND
+        OR
+    }
+
+    class PermissionInterceptor {
+        <<CDI Interceptor>>
+        -SecurityContextService securityContextService
+        +intercept(InvocationContext) Object
+        -checkPermissions(RequiresPermission annotation) void
+        -hasAllPermissions(SecurityContext, String[]) boolean
+        -hasAnyPermission(SecurityContext, String[]) boolean
+    }
+
+    class UserStatusFilter {
+        <<JAX-RS Filter>>
+        -UserStatusService userStatusService
+        -JsonWebToken jwt
+        +filter(ContainerRequestContext) void
+    }
+
+    PermissionInterceptor ..> RequiresPermission : reads
+    PermissionInterceptor ..> LogicalOperator : uses
+    PermissionInterceptor ..> SecurityContextService : uses
+    PermissionInterceptor ..> SecurityContext : validates
+
+    UserStatusFilter ..> UserStatusService : uses
+
+    note for PermissionInterceptor "SecurityContextService is in Application layer"
+    note for UserStatusFilter "UserStatusService is in Application layer"

@@ -1,0 +1,104 @@
+classDiagram
+    direction TB
+
+    class User {
+        <<Aggregate Root>>
+        -UserId id
+        -FullName fullName
+        -EmailAddress email
+        -Password password
+        -RoleId roleId
+        -ContractEndDate contractEndDate
+        -boolean isLocked
+        -AuditInfo auditInfo
+        -Instant lastActivityDate
+        +create(FullName, EmailAddress, Password, RoleId, ContractEndDate)$ User
+        +changeEmail(EmailAddress) void
+        +changeFullName(FullName) void
+        +assignRole(RoleId) void
+        +extendContract(ContractEndDate) void
+        +terminateContract() void
+        +lock() void
+        +unlock() void
+        +changePassword(Password) void
+        +verifyPassword(String) boolean
+        +isContractExpired() boolean
+        +recordActivity() void
+    }
+
+    class UserId {
+        <<Value Object>>
+        -UUID id
+        +newId()$ UserId
+        +id() UUID
+    }
+
+    class FullName {
+        <<Value Object>>
+        -String firstName
+        -String lastName
+        +firstName() String
+        +lastName() String
+        +fullName() String
+    }
+
+    class EmailAddress {
+        <<Value Object>>
+        -String value
+        +value() String
+    }
+
+    class Password {
+        <<Value Object>>
+        -String hashedValue
+        +fromPlainText(String)$ Password
+        +fromHash(String)$ Password
+        +matches(String) boolean
+        +value() String
+    }
+
+    class ContractEndDate {
+        <<Value Object>>
+        -LocalDate date
+        +newContractEndDate(LocalDate)$ ContractEndDate
+        +date() LocalDate
+        +isAfter(ContractEndDate) boolean
+    }
+
+    class AuditInfo {
+        <<Value Object>>
+        -Instant createdAt
+        -Instant updatedAt
+        +of(Instant)$ AuditInfo
+        +touch() void
+        +createdAt() Instant
+        +updatedAt() Instant
+    }
+
+    class RoleId {
+        <<Value Object>>
+        -UUID id
+        +newId()$ RoleId
+        +id() UUID
+    }
+
+    class UserRepository {
+        <<Interface>>
+        +save(User) void
+        +update(User) void
+        +findById(UserId) Optional~User~
+        +findByEmail(EmailAddress) Optional~User~
+        +findAll() List~User~
+        +delete(UserId) void
+        +existsByEmail(EmailAddress) boolean
+    }
+
+    User *-- UserId
+    User *-- FullName
+    User *-- EmailAddress
+    User *-- Password
+    User *-- ContractEndDate
+    User *-- AuditInfo
+    User o-- RoleId : references
+
+    UserRepository ..> User : manages

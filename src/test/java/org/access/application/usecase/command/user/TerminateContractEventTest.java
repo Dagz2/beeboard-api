@@ -89,7 +89,7 @@ class TerminateContractEventTest {
         // Then
         ArgumentCaptor<UserContractTerminatedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserContractTerminatedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserContractTerminatedEvent event = eventCaptor.getValue();
         assertThat(event).isNotNull();
@@ -126,7 +126,7 @@ class TerminateContractEventTest {
         // Then
         ArgumentCaptor<UserContractTerminatedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserContractTerminatedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserContractTerminatedEvent event = eventCaptor.getValue();
         assertThat(event.terminationDate()).isEqualTo(LocalDate.now());
@@ -152,7 +152,7 @@ class TerminateContractEventTest {
 
         // Then - verify event is published after update
         verify(userRepository).update(user);
-        verify(eventPublisher).publish(any(UserContractTerminatedEvent.class));
+        verify(eventPublisher).publishAsync(any(UserContractTerminatedEvent.class));
         verify(auditService).record(any(), any(), any(), any(), any(), any());
     }
 
@@ -180,7 +180,7 @@ class TerminateContractEventTest {
         // Then - verify event is published with termination date
         ArgumentCaptor<UserContractTerminatedEvent> eventCaptor =
             ArgumentCaptor.forClass(UserContractTerminatedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher).publishAsync(eventCaptor.capture());
 
         UserContractTerminatedEvent event = eventCaptor.getValue();
         // The event signals that both contract was terminated (date set to today)
