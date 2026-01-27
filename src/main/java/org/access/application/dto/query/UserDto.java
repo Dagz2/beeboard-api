@@ -1,5 +1,6 @@
 package org.access.application.dto.query;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -18,6 +19,7 @@ public class UserDto {
     /**
      * Unique identifier of the user.
      */
+    @JsonProperty("id")
     public UUID userId;
 
     /**

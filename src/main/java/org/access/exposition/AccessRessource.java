@@ -253,9 +253,11 @@ public class AccessRessource {
     public Response createUser(@Valid CreateUserCommand cmd) {
         Log.info("Request received: POST /users - Creating user: " + cmd.firstName() + " " + cmd.lastName());
         try {
-            createUser.execute(cmd, securityContextService.getCurrentContext());
+            var userId = createUser.execute(cmd, securityContextService.getCurrentContext());
             Log.info("Request successful: POST /users - User created successfully: " + cmd.firstName() + " " + cmd.lastName());
-            return Response.status(Response.Status.CREATED).build();
+            return Response.status(Response.Status.CREATED)
+                .entity(java.util.Map.of("id", userId.id()))
+                .build();
         } catch (Exception e) {
             Log.error("Request failed: POST /users - Failed to create user: " + cmd.firstName() + " " + cmd.lastName() + " - " + e.getMessage());
             throw e;
@@ -738,9 +740,10 @@ public class AccessRessource {
             )
         )
     )
-    public Response deleteUser(@PathParam("userId") UUID userId, @Valid DeleteUserCommand cmd) {
+    public Response deleteUser(@PathParam("userId") UUID userId) {
         Log.info("Request received: DELETE /users/" + userId + " - Deleting user");
         try {
+            var cmd = new DeleteUserCommand(userId);
             deleteUser.execute(cmd, securityContextService.getCurrentContext());
             Log.info("Request successful: DELETE /users/" + userId + " - User deleted successfully");
             return Response.noContent().build();
@@ -802,9 +805,9 @@ public class AccessRessource {
         Log.info("Request received: GET /users/" + userId + " - Retrieving user by ID");
         try {
             var user = userQueryService.findById(userId);
-            if (user != null) {
+            if (user.isPresent()) {
                 Log.info("Request successful: GET /users/" + userId + " - User found");
-                return Response.ok(user).build();
+                return Response.ok(user.get()).build();
             }
             Log.info("Request completed: GET /users/" + userId + " - User not found");
             return Response.status(Response.Status.NOT_FOUND).build();

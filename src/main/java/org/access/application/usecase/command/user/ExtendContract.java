@@ -79,7 +79,7 @@ public class ExtendContract {
         privilegeGuard.validateUserManagement(securityContext.actorTier(), targetRole.tier());
 
         String oldEndDate = user.getContractEndDate().date().toString();
-        user.extendContract(new ContractEndDate(command.newEndDate()));
+        user.extendContract(new ContractEndDate(command.contractEndDate()));
         userRepository.update(user);
 
         // Audit the operation
@@ -89,7 +89,7 @@ public class ExtendContract {
             "USER",
             targetUserId.id().toString(),
             "{\"contractEndDate\": \"" + oldEndDate + "\"}",
-            "{\"contractEndDate\": \"" + command.newEndDate().toString() + "\"}"
+            "{\"contractEndDate\": \"" + command.contractEndDate().toString() + "\"}"
         );
     }
 }

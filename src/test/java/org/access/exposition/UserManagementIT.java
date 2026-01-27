@@ -415,9 +415,10 @@ class UserManagementIT {
                 .contentType("application/json")
                 .body(String.format("""
                     {
+                        "userId": "%s",
                         "roleId": "%s"
                     }
-                    """, tier2RoleId.id()))
+                    """, target.getId().id(), tier2RoleId.id()))
             .when()
                 .put(ACCESS_PATH + "/users/" + target.getId().id() + "/role")
             .then()
@@ -454,9 +455,10 @@ class UserManagementIT {
                 .contentType("application/json")
                 .body(String.format("""
                     {
+                        "userId": "%s",
                         "roleId": "%s"
                     }
-                    """, tier0RoleId.id()))
+                    """, admin.getId().id(), tier0RoleId.id()))
             .when()
                 .put(ACCESS_PATH + "/users/" + admin.getId().id() + "/role")
             .then()
@@ -625,12 +627,13 @@ class UserManagementIT {
             given()
                 .header("Authorization", "Bearer " + token)
                 .contentType("application/json")
-                .body("""
+                .body(String.format("""
                     {
+                        "userId": "%s",
                         "firstName": "Updated",
                         "lastName": "Name"
                     }
-                    """)
+                    """, target.getId().id()))
             .when()
                 .put(ACCESS_PATH + "/users/" + target.getId().id() + "/name")
             .then()
@@ -675,9 +678,10 @@ class UserManagementIT {
                 .contentType("application/json")
                 .body(String.format("""
                     {
+                        "userId": "%s",
                         "contractEndDate": "%s"
                     }
-                    """, LocalDate.now().plusYears(2)))
+                    """, target.getId().id(), LocalDate.now().plusYears(2)))
             .when()
                 .put(ACCESS_PATH + "/users/" + target.getId().id() + "/contract")
             .then()

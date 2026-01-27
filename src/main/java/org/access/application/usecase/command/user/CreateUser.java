@@ -59,11 +59,12 @@ public class CreateUser {
      *
      * @param command         the input data needed to create the user
      * @param securityContext the security context of the actor performing the operation
+     * @return the UserId of the newly created user
      * @throws IllegalArgumentException if the role does not exist or input is invalid
      * @throws org.access.domain.exception.PrivilegeEscalationException if actor tries to assign higher tier role
      */
     @Transactional
-    public void execute(CreateUserCommand command, SecurityContext securityContext) {
+    public UserId execute(CreateUserCommand command, SecurityContext securityContext) {
         RoleId roleId = new RoleId(command.roleId());
 
         // Load role and validate tier hierarchy
@@ -98,5 +99,7 @@ public class CreateUser {
 
         // Audit the operation
         auditService.record(securityContext, "CREATE_USER", "USER", user.getId().id().toString());
+
+        return user.getId();
     }
 }
